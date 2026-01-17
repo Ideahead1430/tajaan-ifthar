@@ -717,6 +717,48 @@
             text-decoration: underline;
         }
 
+        .error-message {
+            background-color: #ffebee;
+            color: var(--merah);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* Alternative Data Source Toggle */
+        .data-source-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .data-source-option {
+            padding: 10px 20px;
+            background-color: var(--putih);
+            border: 1px solid var(--kelabu-sederhana);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .data-source-option:first-child {
+            border-radius: 5px 0 0 5px;
+        }
+
+        .data-source-option:last-child {
+            border-radius: 0 5px 5px 0;
+        }
+
+        .data-source-option.active {
+            background-color: var(--hijau-utama);
+            color: var(--putih);
+            border-color: var(--hijau-utama);
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .header-content {
@@ -792,34 +834,40 @@
                     <p>1. Pergi ke <a href="https://sheets.google.com" target="_blank">Google Sheets</a></p>
                     <p>2. Klik "Blank" untuk membuat spreadsheet baru</p>
                     <p>3. Namakan spreadsheet sebagai "Sumbangan Ramadan 2026"</p>
-                    <p>4. Salil URL spreadsheet dari address bar</p>
+                    <p>4. Salin ID spreadsheet dari URL (contoh: <code>https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit</code>)</p>
                 </div>
                 <div class="setup-step">
                     <h3>Langkah 2: Publish Spreadsheet</h3>
                     <p>1. Klik "File" > "Share" > "Publish to web"</p>
                     <p>2. Dalam tab "Link", pilih "Entire Document"</p>
                     <p>3. Klik "Publish" dan kemudian "OK"</p>
-                    <p>4. Salin ID spreadsheet dari URL (contoh: <code>https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit</code>)</p>
+                    <p>4. Salin ID spreadsheet dari URL</p>
                 </div>
                 <div class="setup-step">
-                    <h3>Langkah 3: Setup Halaman Web</h3>
-                    <p>1. Masukkan ID spreadsheet di ruangan yang disediakan</p>
+                    <h3>Langkah 3: Dapatkan API Key</h3>
+                    <p>1. Pergi ke <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></p>
+                    <p>2. Buat projek baru atau pilih projek sedia ada</p>
+                    <p>3. Enable Google Sheets API</p>
+                    <p>4. Buat API Key dengan sekatan yang sesuai</p>
+                    <p>5. Salin API Key</p>
+                </div>
+                <div class="setup-step">
+                    <h3>Langkah 4: Setup Halaman Web</h3>
+                    <p>1. Masukkan ID spreadsheet dan API key di ruangan yang disediakan</p>
                     <p>2. Klik "Simpan & Sambung"</p>
                     <p>3. Tunggu beberapa saat untuk sambungan dibuat</p>
                     <p>4. Halaman web akan dimuatkan dengan data dari Google Sheets</p>
-                </div>
-                <div class="setup-step">
-                    <h3>Langkah 4: Format Data (Opsional)</h3>
-                    <p>Data akan disimpan dalam format berikut:</p>
-                    <p>- Sheet 1: Data Ramadan (30 hari)</p>
-                    <p>- Sheet 2: Data Penderma</p>
-                    <p>Anda tidak perlu membuat format ini, ia akan dicipta secara automatik.</p>
                 </div>
             </div>
             <div class="form-group">
                 <label for="spreadsheetId">ID Spreadsheet Google Sheets:</label>
                 <input type="text" id="spreadsheetId" placeholder="Contoh: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms">
             </div>
+            <div class="form-group">
+                <label for="apiKey">API Key:</label>
+                <input type="text" id="apiKey" placeholder="Masukkan API Key anda">
+            </div>
+            <div class="error-message" id="setupErrorMessage"></div>
             <button class="submit-donation" id="saveSpreadsheetId">Simpan & Sambung</button>
         </div>
     </div>
@@ -950,6 +998,10 @@
     <section class="admin-panel">
         <div class="container">
             <h2 class="section-title">Panel Pentadbir</h2>
+            <div class="data-source-toggle">
+                <div class="data-source-option active" id="localStorageOption">Local Storage</div>
+                <div class="data-source-option" id="googleSheetsOption">Google Sheets</div>
+            </div>
             <div class="admin-controls">
                 <button class="admin-btn" id="refreshDataBtn">Segar Semula Data</button>
                 <button class="admin-btn" id="exportDataBtn">Eksport Data</button>
@@ -1049,7 +1101,8 @@
         
         // Google Sheets Configuration
         let SPREADSHEET_ID = '';
-        let API_KEY = 'AIzaSyC0rZsl1zqIz6t-4s_8bF5cR8s_2pL3d4Q5'; // Public API key for demo purposes
+        let API_KEY = '';
+        let USE_GOOGLE_SHEETS = false;
         let ramadanDays = [];
         
         // Initialize data structure
@@ -1068,22 +1121,83 @@
         
         // Load data from Google Sheets
         async function loadDataFromSheets() {
-            if (!SPREADSHEET_ID) {
-                showSetupModal();
+            if (!SPREADSHEET_ID || !API_KEY) {
+                showSetupError('Sila masukkan ID Spreadsheet dan API Key yang sah');
                 return false;
             }
             
             showLoading(true);
             
             try {
-                const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/RamadanData?key=' + API_KEY;
-                const response = await fetch(url);
+                // First, try to get the spreadsheet info to verify it exists
+                const infoUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '?key=' + API_KEY;
+                const infoResponse = await fetch(infoUrl);
                 
-                if (!response.ok) {
+                if (!infoResponse.ok) {
+                    const errorData = await infoResponse.json();
+                    let errorMessage = 'Gagal mengakses spreadsheet: ';
+                    
+                    if (errorData.error && errorData.error.message) {
+                        errorMessage += errorData.error.message;
+                    } else {
+                        errorMessage += 'ID Spreadsheet atau API Key tidak sah';
+                    }
+                    
+                    showSetupError(errorMessage);
+                    return false;
+                }
+                
+                // Check if the sheet exists, if not, create it
+                const sheetInfo = await infoResponse.json();
+                let sheetExists = false;
+                let sheetId = 0;
+                
+                if (sheetInfo.sheets) {
+                    for (const sheet of sheetInfo.sheets) {
+                        if (sheet.properties.title === 'RamadanData') {
+                            sheetExists = true;
+                            sheetId = sheet.properties.sheetId;
+                            break;
+                        }
+                    }
+                }
+                
+                // If sheet doesn't exist, create it
+                if (!sheetExists) {
+                    const createSheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + ':batchUpdate?key=' + API_KEY;
+                    const createSheetResponse = await fetch(createSheetUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            requests: [
+                                {
+                                    addSheet: {
+                                        properties: {
+                                            title: 'RamadanData'
+                                        }
+                                    }
+                                }
+                            ]
+                        })
+                    });
+                    
+                    if (!createSheetResponse.ok) {
+                        showSetupError('Gagal mencipta lembaran kerja baru');
+                        return false;
+                    }
+                }
+                
+                // Now try to get the data
+                const dataUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/RamadanData?key=' + API_KEY;
+                const dataResponse = await fetch(dataUrl);
+                
+                if (!dataResponse.ok) {
                     throw new Error('Failed to fetch data from Google Sheets');
                 }
                 
-                const data = await response.json();
+                const data = await dataResponse.json();
                 
                 if (data.values && data.values.length > 0) {
                     // Parse data from sheets
@@ -1128,19 +1242,39 @@
                     await saveDataToSheets();
                 }
                 
+                hideSetupError();
                 return true;
             } catch (error) {
                 console.error('Error loading data from Google Sheets:', error);
-                showNotification('Gagal memuatkan data. Sila cuba lagi.');
+                showSetupError('Ralat semasa memuatkan data: ' + error.message);
                 return false;
             } finally {
                 showLoading(false);
             }
         }
         
+        // Load data from localStorage
+        function loadDataFromLocalStorage() {
+            const savedData = localStorage.getItem('ramadanDonationData');
+            if (savedData) {
+                try {
+                    const parsedData = JSON.parse(savedData);
+                    ramadanDays = parsedData;
+                    return true;
+                } catch (error) {
+                    console.error('Error parsing saved data:', error);
+                    initializeData();
+                    return false;
+                }
+            } else {
+                initializeData();
+                return false;
+            }
+        }
+        
         // Save data to Google Sheets
         async function saveDataToSheets() {
-            if (!SPREADSHEET_ID) {
+            if (!SPREADSHEET_ID || !API_KEY) {
                 showNotification('Sila setup Google Sheets terlebih dahulu');
                 return false;
             }
@@ -1178,26 +1312,102 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to save data to Google Sheets');
+                    const errorData = await response.json();
+                    let errorMessage = 'Gagal menyimpan data: ';
+                    
+                    if (errorData.error && errorData.error.message) {
+                        errorMessage += errorData.error.message;
+                    } else {
+                        errorMessage += 'Ralat tidak diketahui';
+                    }
+                    
+                    showNotification(errorMessage);
+                    return false;
                 }
                 
                 return true;
             } catch (error) {
                 console.error('Error saving data to Google Sheets:', error);
-                showNotification('Gagal menyimpan data. Sila cuba lagi.');
+                showNotification('Gagal menyimpan data: ' + error.message);
                 return false;
             } finally {
                 showLoading(false);
             }
         }
         
+        // Save data to localStorage
+        function saveDataToLocalStorage() {
+            try {
+                localStorage.setItem('ramadanDonationData', JSON.stringify(ramadanDays));
+                return true;
+            } catch (error) {
+                console.error('Error saving data to localStorage:', error);
+                showNotification('Gagal menyimpan data secara tempatan');
+                return false;
+            }
+        }
+        
         // Save donor information to separate sheet
         async function saveDonorToSheets(donorName, donorPhone, day, slots) {
-            if (!SPREADSHEET_ID) {
+            if (!SPREADSHEET_ID || !API_KEY) {
                 return false;
             }
             
             try {
+                // Check if Donors sheet exists, if not create it
+                const infoUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '?key=' + API_KEY;
+                const infoResponse = await fetch(infoUrl);
+                
+                if (infoResponse.ok) {
+                    const sheetInfo = await infoResponse.json();
+                    let sheetExists = false;
+                    
+                    if (sheetInfo.sheets) {
+                        for (const sheet of sheetInfo.sheets) {
+                            if (sheet.properties.title === 'Donors') {
+                                sheetExists = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // If sheet doesn't exist, create it
+                    if (!sheetExists) {
+                        const createSheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + ':batchUpdate?key=' + API_KEY;
+                        await fetch(createSheetUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                requests: [
+                                    {
+                                        addSheet: {
+                                            properties: {
+                                                title: 'Donors'
+                                            }
+                                        }
+                                    }
+                                ]
+                            })
+                        });
+                        
+                        // Add headers to the new sheet
+                        const headersUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/Donors?valueInputOption=USER_ENTERED&key=' + API_KEY;
+                        await fetch(headersUrl, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                range: 'Donors',
+                                majorDimension: 'ROWS',
+                                values: [['Date', 'Name', 'Phone', 'Day', 'Slots', 'Amount']]
+                            })
+                        });
+                    }
+                }
+                
                 const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/Donors:append?valueInputOption=USER_ENTERED&key=' + API_KEY;
                 
                 const donorData = [
@@ -1398,6 +1608,19 @@
             document.getElementById('setupModal').classList.remove('active');
         }
         
+        // Show setup error
+        function showSetupError(message) {
+            const errorElement = document.getElementById('setupErrorMessage');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
+        
+        // Hide setup error
+        function hideSetupError() {
+            const errorElement = document.getElementById('setupErrorMessage');
+            errorElement.classList.remove('show');
+        }
+        
         // Submit donation
         async function submitDonation() {
             const donorName = document.getElementById('donorName').value.trim();
@@ -1430,14 +1653,20 @@
             dayData.donorName = donorName;
             dayData.donorPhone = donorPhone;
             
-            // Save data to Google Sheets
-            const saved = await saveDataToSheets();
+            // Save data
+            let saved = false;
+            if (USE_GOOGLE_SHEETS) {
+                saved = await saveDataToSheets();
+                if (saved) {
+                    await saveDonorToSheets(donorName, donorPhone, selectedDay, selectedSlotIndices);
+                }
+            } else {
+                saved = saveDataToLocalStorage();
+            }
+            
             if (!saved) {
                 return;
             }
-            
-            // Save donor information
-            await saveDonorToSheets(donorName, donorPhone, selectedDay, selectedSlotIndices);
             
             // Update UI
             updateMainProgressBar();
@@ -1455,9 +1684,16 @@
             showNotification('Terima kasih ' + donorName + ' atas sumbangan RM' + (selectedSlots.length * SLOT_PRICE) + '!');
         }
         
-        // Refresh data from Google Sheets
+        // Refresh data
         async function refreshData() {
-            const loaded = await loadDataFromSheets();
+            let loaded = false;
+            
+            if (USE_GOOGLE_SHEETS) {
+                loaded = await loadDataFromSheets();
+            } else {
+                loaded = loadDataFromLocalStorage();
+            }
+            
             if (loaded) {
                 updateMainProgressBar();
                 generateDayCards(1);
@@ -1487,7 +1723,14 @@
         async function resetData() {
             if (confirm('Adakah anda pasti ingin reset semua data? Tindakan ini tidak boleh dibatalkan.')) {
                 initializeData();
-                const saved = await saveDataToSheets();
+                
+                let saved = false;
+                if (USE_GOOGLE_SHEETS) {
+                    saved = await saveDataToSheets();
+                } else {
+                    saved = saveDataToLocalStorage();
+                }
+                
                 if (saved) {
                     updateMainProgressBar();
                     generateDayCards(1);
@@ -1502,13 +1745,17 @@
         // Save spreadsheet ID
         async function saveSpreadsheetId() {
             const id = document.getElementById('spreadsheetId').value.trim();
-            if (!id) {
-                showNotification('Sila masukkan ID Spreadsheet yang sah');
+            const key = document.getElementById('apiKey').value.trim();
+            
+            if (!id || !key) {
+                showSetupError('Sila masukkan ID Spreadsheet dan API Key yang sah');
                 return;
             }
             
             SPREADSHEET_ID = id;
+            API_KEY = key;
             localStorage.setItem('spreadsheetId', id);
+            localStorage.setItem('apiKey', key);
             
             hideSetupModal();
             
@@ -1525,17 +1772,48 @@
             }
         }
         
+        // Switch data source
+        function switchDataSource(useGoogleSheets) {
+            USE_GOOGLE_SHEETS = useGoogleSheets;
+            localStorage.setItem('useGoogleSheets', useGoogleSheets);
+            
+            // Update UI
+            document.getElementById('localStorageOption').classList.toggle('active', !useGoogleSheets);
+            document.getElementById('googleSheetsOption').classList.toggle('active', useGoogleSheets);
+            
+            // Reload data
+            refreshData();
+        }
+        
         // Initialize the application
         async function init() {
-            // Load spreadsheet ID from localStorage
+            // Load settings from localStorage
             const savedId = localStorage.getItem('spreadsheetId');
+            const savedKey = localStorage.getItem('apiKey');
+            const savedUseGoogleSheets = localStorage.getItem('useGoogleSheets') === 'true';
+            
             if (savedId) {
                 SPREADSHEET_ID = savedId;
                 document.getElementById('spreadsheetId').value = savedId;
             }
             
-            // Load data from Google Sheets
-            const loaded = await loadDataFromSheets();
+            if (savedKey) {
+                API_KEY = savedKey;
+                document.getElementById('apiKey').value = savedKey;
+            }
+            
+            USE_GOOGLE_SHEETS = savedUseGoogleSheets;
+            document.getElementById('localStorageOption').classList.toggle('active', !savedUseGoogleSheets);
+            document.getElementById('googleSheetsOption').classList.toggle('active', savedUseGoogleSheets);
+            
+            // Load data
+            let loaded = false;
+            
+            if (USE_GOOGLE_SHEETS) {
+                loaded = await loadDataFromSheets();
+            } else {
+                loaded = loadDataFromLocalStorage();
+            }
             
             if (loaded) {
                 // Update UI
@@ -1546,7 +1824,7 @@
                 generateDayCards(4);
                 generateDayOptions();
             } else {
-                // Initialize with empty data if Google Sheets is not set up
+                // Initialize with empty data
                 initializeData();
                 updateMainProgressBar();
                 generateDayCards(1);
@@ -1554,6 +1832,10 @@
                 generateDayCards(3);
                 generateDayCards(4);
                 generateDayOptions();
+                
+                if (USE_GOOGLE_SHEETS) {
+                    showSetupModal();
+                }
             }
             
             // Event listeners
@@ -1591,6 +1873,15 @@
             document.getElementById('exportDataBtn').addEventListener('click', exportData);
             document.getElementById('resetDataBtn').addEventListener('click', resetData);
             document.getElementById('setupSheetsBtn').addEventListener('click', showSetupModal);
+            
+            // Data source toggle
+            document.getElementById('localStorageOption').addEventListener('click', () => {
+                switchDataSource(false);
+            });
+            
+            document.getElementById('googleSheetsOption').addEventListener('click', () => {
+                switchDataSource(true);
+            });
             
             // Setup modal
             document.getElementById('closeSetupModal').addEventListener('click', hideSetupModal);
