@@ -730,6 +730,19 @@
             display: block;
         }
 
+        .warning-message {
+            background-color: #fff8e1;
+            color: #ff9800;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .warning-message.show {
+            display: block;
+        }
+
         /* Alternative Data Source Toggle */
         .data-source-toggle {
             display: flex;
@@ -757,6 +770,23 @@
             background-color: var(--hijau-utama);
             color: var(--putih);
             border-color: var(--hijau-utama);
+        }
+
+        /* Read-only Mode Toggle */
+        .readonly-mode {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .readonly-mode label {
+            margin-right: 10px;
+        }
+
+        .readonly-mode input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
         }
 
         /* Responsive Design */
@@ -848,15 +878,17 @@
                     <p>1. Pergi ke <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></p>
                     <p>2. Buat projek baru atau pilih projek sedia ada</p>
                     <p>3. Enable Google Sheets API</p>
-                    <p>4. Buat API Key dengan sekatan yang sesuai</p>
-                    <p>5. Salin API Key</p>
+                    <p>4. Buat API Key dengan kebenaran yang sesuai</p>
+                    <p>5. Pastikan tiada sekatan pada API Key</p>
+                    <p>6. Salin API Key</p>
                 </div>
                 <div class="setup-step">
                     <h3>Langkah 4: Setup Halaman Web</h3>
                     <p>1. Masukkan ID spreadsheet dan API key di ruangan yang disediakan</p>
-                    <p>2. Klik "Simpan & Sambung"</p>
-                    <p>3. Tunggu beberapa saat untuk sambungan dibuat</p>
-                    <p>4. Halaman web akan dimuatkan dengan data dari Google Sheets</p>
+                    <p>2. Pilih mod "Baca Sahaja" jika API Key anda mempunyai sekatan</p>
+                    <p>3. Klik "Simpan & Sambung"</p>
+                    <p>4. Tunggu beberapa saat untuk sambungan dibuat</p>
+                    <p>5. Halaman web akan dimuatkan dengan data dari Google Sheets</p>
                 </div>
             </div>
             <div class="form-group">
@@ -867,7 +899,12 @@
                 <label for="apiKey">API Key:</label>
                 <input type="text" id="apiKey" placeholder="Masukkan API Key anda">
             </div>
+            <div class="readonly-mode">
+                <input type="checkbox" id="readonlyMode">
+                <label for="readonlyMode">Mod Baca Sahaja (jika API Key mempunyai sekatan)</label>
+            </div>
             <div class="error-message" id="setupErrorMessage"></div>
+            <div class="warning-message" id="setupWarningMessage">Mod baca sahaja dipilih. Data tidak akan disimpan ke Google Sheets.</div>
             <button class="submit-donation" id="saveSpreadsheetId">Simpan & Sambung</button>
         </div>
     </div>
@@ -1103,6 +1140,7 @@
         let SPREADSHEET_ID = '';
         let API_KEY = '';
         let USE_GOOGLE_SHEETS = false;
+        let READONLY_MODE = false;
         let ramadanDays = [];
         
         // Initialize data structure
@@ -1147,45 +1185,54 @@
                     return false;
                 }
                 
-                // Check if the sheet exists, if not, create it
+                // Check if the sheet exists
                 const sheetInfo = await infoResponse.json();
                 let sheetExists = false;
-                let sheetId = 0;
                 
                 if (sheetInfo.sheets) {
                     for (const sheet of sheetInfo.sheets) {
                         if (sheet.properties.title === 'RamadanData') {
                             sheetExists = true;
-                            sheetId = sheet.properties.sheetId;
                             break;
                         }
                     }
                 }
                 
-                // If sheet doesn't exist, create it
-                if (!sheetExists) {
-                    const createSheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + ':batchUpdate?key=' + API_KEY;
-                    const createSheetResponse = await fetch(createSheetUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            requests: [
-                                {
-                                    addSheet: {
-                                        properties: {
-                                            title: 'RamadanData'
+                // If sheet doesn't exist and not in read-only mode, try to create it
+                if (!sheetExists && !READONLY_MODE) {
+                    try {
+                        const createSheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + ':batchUpdate?key=' + API_KEY;
+                        const createSheetResponse = await fetch(createSheetUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                requests: [
+                                    {
+                                        addSheet: {
+                                            properties: {
+                                                title: 'RamadanData'
+                                            }
                                         }
                                     }
-                                }
-                            ]
-                        })
-                    });
-                    
-                    if (!createSheetResponse.ok) {
-                        showSetupError('Gagal mencipta lembaran kerja baru');
-                        return false;
+                                ]
+                            })
+                        });
+                        
+                        if (!createSheetResponse.ok) {
+                            // If we can't create the sheet, fall back to read-only mode
+                            console.warn('Could not create sheet, falling back to read-only mode');
+                            READONLY_MODE = true;
+                            document.getElementById('readonlyMode').checked = true;
+                            showSetupWarning('Tidak dapat mencipta lembaran kerja. Mod baca sahaja diaktifkan.');
+                        }
+                    } catch (error) {
+                        // If we can't create the sheet, fall back to read-only mode
+                        console.warn('Could not create sheet, falling back to read-only mode:', error);
+                        READONLY_MODE = true;
+                        document.getElementById('readonlyMode').checked = true;
+                        showSetupWarning('Tidak dapat mencipta lembaran kerja. Mod baca sahaja diaktifkan.');
                     }
                 }
                 
@@ -1239,10 +1286,13 @@
                 } else {
                     // Initialize with empty data if sheet is empty
                     initializeData();
-                    await saveDataToSheets();
+                    if (!READONLY_MODE) {
+                        await saveDataToSheets();
+                    }
                 }
                 
                 hideSetupError();
+                hideSetupWarning();
                 return true;
             } catch (error) {
                 console.error('Error loading data from Google Sheets:', error);
@@ -1276,6 +1326,11 @@
         async function saveDataToSheets() {
             if (!SPREADSHEET_ID || !API_KEY) {
                 showNotification('Sila setup Google Sheets terlebih dahulu');
+                return false;
+            }
+            
+            if (READONLY_MODE) {
+                showNotification('Mod baca sahaja diaktifkan. Data tidak disimpan ke Google Sheets.');
                 return false;
             }
             
@@ -1317,6 +1372,14 @@
                     
                     if (errorData.error && errorData.error.message) {
                         errorMessage += errorData.error.message;
+                        
+                        // If it's an authorization error, suggest read-only mode
+                        if (errorData.error.status === 'PERMISSION_DENIED' || errorData.error.code === 401 || errorData.error.code === 403) {
+                            errorMessage += ' Pertimbangkan untuk menggunakan mod baca sahaja.';
+                            READONLY_MODE = true;
+                            document.getElementById('readonlyMode').checked = true;
+                            showSetupWarning('Mod baca sahaja diaktifkan kerana kebenaran API terhad.');
+                        }
                     } else {
                         errorMessage += 'Ralat tidak diketahui';
                     }
@@ -1349,7 +1412,7 @@
         
         // Save donor information to separate sheet
         async function saveDonorToSheets(donorName, donorPhone, day, slots) {
-            if (!SPREADSHEET_ID || !API_KEY) {
+            if (!SPREADSHEET_ID || !API_KEY || READONLY_MODE) {
                 return false;
             }
             
@@ -1371,40 +1434,46 @@
                         }
                     }
                     
-                    // If sheet doesn't exist, create it
+                    // If sheet doesn't exist, try to create it
                     if (!sheetExists) {
-                        const createSheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + ':batchUpdate?key=' + API_KEY;
-                        await fetch(createSheetUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                requests: [
-                                    {
-                                        addSheet: {
-                                            properties: {
-                                                title: 'Donors'
+                        try {
+                            const createSheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + ':batchUpdate?key=' + API_KEY;
+                            const createSheetResponse = await fetch(createSheetUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    requests: [
+                                        {
+                                            addSheet: {
+                                                properties: {
+                                                    title: 'Donors'
+                                                }
                                             }
                                         }
-                                    }
-                                ]
-                            })
-                        });
-                        
-                        // Add headers to the new sheet
-                        const headersUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/Donors?valueInputOption=USER_ENTERED&key=' + API_KEY;
-                        await fetch(headersUrl, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                range: 'Donors',
-                                majorDimension: 'ROWS',
-                                values: [['Date', 'Name', 'Phone', 'Day', 'Slots', 'Amount']]
-                            })
-                        });
+                                    ]
+                                })
+                            });
+                            
+                            if (createSheetResponse.ok) {
+                                // Add headers to the new sheet
+                                const headersUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/Donors?valueInputOption=USER_ENTERED&key=' + API_KEY;
+                                await fetch(headersUrl, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        range: 'Donors',
+                                        majorDimension: 'ROWS',
+                                        values: [['Date', 'Name', 'Phone', 'Day', 'Slots', 'Amount']]
+                                    })
+                                });
+                            }
+                        } catch (error) {
+                            console.warn('Could not create Donors sheet:', error);
+                        }
                     }
                 }
                 
@@ -1621,6 +1690,19 @@
             errorElement.classList.remove('show');
         }
         
+        // Show setup warning
+        function showSetupWarning(message) {
+            const warningElement = document.getElementById('setupWarningMessage');
+            warningElement.textContent = message;
+            warningElement.classList.add('show');
+        }
+        
+        // Hide setup warning
+        function hideSetupWarning() {
+            const warningElement = document.getElementById('setupWarningMessage');
+            warningElement.classList.remove('show');
+        }
+        
         // Submit donation
         async function submitDonation() {
             const donorName = document.getElementById('donorName').value.trim();
@@ -1657,16 +1739,15 @@
             let saved = false;
             if (USE_GOOGLE_SHEETS) {
                 saved = await saveDataToSheets();
-                if (saved) {
+                if (saved && !READONLY_MODE) {
                     await saveDonorToSheets(donorName, donorPhone, selectedDay, selectedSlotIndices);
                 }
             } else {
                 saved = saveDataToLocalStorage();
             }
             
-            if (!saved) {
-                return;
-            }
+            // Even if saving to Google Sheets fails, we still want to update the UI
+            // if we're in read-only mode or using localStorage
             
             // Update UI
             updateMainProgressBar();
@@ -1681,7 +1762,15 @@
             updateDonationSummary();
             
             // Show notification
-            showNotification('Terima kasih ' + donorName + ' atas sumbangan RM' + (selectedSlots.length * SLOT_PRICE) + '!');
+            let notificationMessage = 'Terima kasih ' + donorName + ' atas sumbangan RM' + (selectedSlots.length * SLOT_PRICE) + '!';
+            
+            if (USE_GOOGLE_SHEETS && READONLY_MODE) {
+                notificationMessage += ' (Data disimpan secara tempatan)';
+            } else if (USE_GOOGLE_SHEETS && !saved) {
+                notificationMessage += ' (Gagal menyimpan ke Google Sheets, data disimpan secara tempatan)';
+            }
+            
+            showNotification(notificationMessage);
         }
         
         // Refresh data
@@ -1725,19 +1814,25 @@
                 initializeData();
                 
                 let saved = false;
-                if (USE_GOOGLE_SHEETS) {
+                if (USE_GOOGLE_SHEETS && !READONLY_MODE) {
                     saved = await saveDataToSheets();
                 } else {
                     saved = saveDataToLocalStorage();
                 }
                 
-                if (saved) {
+                if (saved || (USE_GOOGLE_SHEETS && READONLY_MODE)) {
                     updateMainProgressBar();
                     generateDayCards(1);
                     generateDayCards(2);
                     generateDayCards(3);
                     generateDayCards(4);
-                    showNotification('Semua data telah direset');
+                    
+                    let notificationMessage = 'Semua data telah direset';
+                    if (USE_GOOGLE_SHEETS && READONLY_MODE) {
+                        notificationMessage += ' (secara tempatan)';
+                    }
+                    
+                    showNotification(notificationMessage);
                 }
             }
         }
@@ -1746,6 +1841,7 @@
         async function saveSpreadsheetId() {
             const id = document.getElementById('spreadsheetId').value.trim();
             const key = document.getElementById('apiKey').value.trim();
+            const readonly = document.getElementById('readonlyMode').checked;
             
             if (!id || !key) {
                 showSetupError('Sila masukkan ID Spreadsheet dan API Key yang sah');
@@ -1754,8 +1850,16 @@
             
             SPREADSHEET_ID = id;
             API_KEY = key;
+            READONLY_MODE = readonly;
             localStorage.setItem('spreadsheetId', id);
             localStorage.setItem('apiKey', key);
+            localStorage.setItem('readonlyMode', readonly);
+            
+            if (readonly) {
+                showSetupWarning('Mod baca sahaja dipilih. Data tidak akan disimpan ke Google Sheets.');
+            } else {
+                hideSetupWarning();
+            }
             
             hideSetupModal();
             
@@ -1791,6 +1895,7 @@
             const savedId = localStorage.getItem('spreadsheetId');
             const savedKey = localStorage.getItem('apiKey');
             const savedUseGoogleSheets = localStorage.getItem('useGoogleSheets') === 'true';
+            const savedReadonlyMode = localStorage.getItem('readonlyMode') === 'true';
             
             if (savedId) {
                 SPREADSHEET_ID = savedId;
@@ -1803,8 +1908,15 @@
             }
             
             USE_GOOGLE_SHEETS = savedUseGoogleSheets;
+            READONLY_MODE = savedReadonlyMode;
+            
             document.getElementById('localStorageOption').classList.toggle('active', !savedUseGoogleSheets);
             document.getElementById('googleSheetsOption').classList.toggle('active', savedUseGoogleSheets);
+            document.getElementById('readonlyMode').checked = savedReadonlyMode;
+            
+            if (savedReadonlyMode) {
+                showSetupWarning('Mod baca sahaja dipilih. Data tidak akan disimpan ke Google Sheets.');
+            }
             
             // Load data
             let loaded = false;
@@ -1886,6 +1998,15 @@
             // Setup modal
             document.getElementById('closeSetupModal').addEventListener('click', hideSetupModal);
             document.getElementById('saveSpreadsheetId').addEventListener('click', saveSpreadsheetId);
+            
+            // Read-only mode toggle
+            document.getElementById('readonlyMode').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    showSetupWarning('Mod baca sahaja dipilih. Data tidak akan disimpan ke Google Sheets.');
+                } else {
+                    hideSetupWarning();
+                }
+            });
             
             // Close modal when clicking outside
             window.addEventListener('click', (e) => {
