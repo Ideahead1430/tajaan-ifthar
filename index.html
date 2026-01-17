@@ -756,6 +756,19 @@
             display: block;
         }
 
+        .info-message {
+            background-color: #e3f2fd;
+            color: var(--biru);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .info-message.show {
+            display: block;
+        }
+
         /* Alternative Data Source Toggle */
         .data-source-toggle {
             display: flex;
@@ -800,6 +813,24 @@
         .readonly-mode input[type="checkbox"] {
             width: 20px;
             height: 20px;
+        }
+
+        /* Data Source Status */
+        .data-source-status {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .data-source-status.google-sheets {
+            background-color: #e8f5e9;
+            color: var(--hijau-lembut);
+        }
+
+        .data-source-status.local-storage {
+            background-color: #e3f2fd;
+            color: var(--biru);
         }
 
         /* Responsive Design */
@@ -919,7 +950,9 @@
             <div class="error-message" id="setupErrorMessage"></div>
             <div class="warning-message" id="setupWarningMessage">Mod baca sahaja dipilih. Data tidak akan disimpan ke Google Sheets.</div>
             <div class="success-message" id="setupSuccessMessage"></div>
+            <div class="info-message" id="setupInfoMessage"></div>
             <button class="submit-donation" id="saveSpreadsheetId">Simpan & Sambung</button>
+            <button class="admin-btn" id="useLocalStorageBtn" style="margin-top: 10px; width: 100%;">Gunakan Local Storage Sahaja</button>
         </div>
     </div>
 
@@ -1001,6 +1034,10 @@
     <section class="ramadan-schedule">
         <div class="container">
             <h2 class="section-title">Jadual Ramadan</h2>
+            
+            <div class="data-source-status" id="dataSourceStatus">
+                <!-- Will be populated by JavaScript -->
+            </div>
             
             <div class="tabs">
                 <div class="tab active" data-week="1">Minggu 1</div>
@@ -1171,6 +1208,23 @@
             }
         }
         
+        // Update data source status
+        function updateDataSourceStatus() {
+            const statusElement = document.getElementById('dataSourceStatus');
+            
+            if (USE_GOOGLE_SHEETS) {
+                statusElement.className = 'data-source-status google-sheets';
+                if (READONLY_MODE) {
+                    statusElement.textContent = 'Menggunakan Google Sheets (Mod Baca Sahaja) - Data disimpan secara tempatan';
+                } else {
+                    statusElement.textContent = 'Menggunakan Google Sheets - Data disimpan ke Google Sheets';
+                }
+            } else {
+                statusElement.className = 'data-source-status local-storage';
+                statusElement.textContent = 'Menggunakan Local Storage - Data disimpan secara tempatan';
+            }
+        }
+        
         // Load data from Google Sheets
         async function loadDataFromSheets() {
             if (!SPREADSHEET_ID || !API_KEY) {
@@ -1261,9 +1315,19 @@
                             // If we can't create the sheet, fall back to read-only mode
                             const errorData = await createSheetResponse.json();
                             console.warn('Could not create sheet:', errorData);
-                            READONLY_MODE = true;
-                            document.getElementById('readonlyMode').checked = true;
-                            showSetupWarning('Tidak dapat mencipta lembaran kerja. Mod baca sahaja diaktifkan.');
+                            
+                            // Check if it's an authorization error
+                            if (errorData.error && (errorData.error.code === 401 || errorData.error.code === 403)) {
+                                showSetupError('Kebenaran API tidak mencukupi untuk mencipta lembaran kerja. Sila gunakan mod baca sahaja atau dapatkan API Key dengan kebenaran yang lebih tinggi.');
+                                READONLY_MODE = true;
+                                document.getElementById('readonlyMode').checked = true;
+                                showSetupWarning('Mod baca sahaja diaktifkan kerana kebenaran API terhad.');
+                            } else {
+                                showSetupError('Tidak dapat mencipta lembaran kerja: ' + (errorData.error.message || 'Ralat tidak diketahui'));
+                                READONLY_MODE = true;
+                                document.getElementById('readonlyMode').checked = true;
+                                showSetupWarning('Mod baca sahaja diaktifkan.');
+                            }
                         }
                     } catch (error) {
                         // If we can't create the sheet, fall back to read-only mode
@@ -1281,6 +1345,7 @@
                 } else {
                     // If sheet doesn't exist and we're in read-only mode, we can't get data
                     showSetupError('Lembaran kerja RamadanData tidak wujud dan tidak dapat dicipta dalam mod baca sahaja.');
+                    showSetupInfo('Untuk menggunakan Google Sheets, sila: 1) Dapatkan API Key dengan kebenaran tulis, atau 2) Cipta lembaran kerja "RamadanData" secara manual dalam spreadsheet anda, atau 3) Gunakan Local Storage sebagai alternatif.');
                     return false;
                 }
                 
@@ -1291,6 +1356,7 @@
                         // This is likely because the sheet doesn't exist
                         if (!sheetExists) {
                             showSetupError('Lembaran kerja RamadanData tidak wujud. Sila cuba menciptanya atau gunakan mod baca sahaja.');
+                            showSetupInfo('Untuk menggunakan Google Sheets, sila: 1) Dapatkan API Key dengan kebenaran tulis, atau 2) Cipta lembaran kerja "RamadanData" secara manual dalam spreadsheet anda, atau 3) Gunakan Local Storage sebagai alternatif.');
                         } else {
                             showSetupError('Ralat 400: Permintaan tidak sah. Sila semak ID Spreadsheet dan API Key.');
                         }
@@ -1349,6 +1415,7 @@
                 
                 hideSetupError();
                 hideSetupWarning();
+                hideSetupInfo();
                 return true;
             } catch (error) {
                 console.error('Error loading data from Google Sheets:', error);
@@ -1429,15 +1496,20 @@
                     if (errorData.error && errorData.error.message) {
                         errorMessage += errorData.error.message;
                         
-                        // If it's an authorization error, suggest read-only mode
+                        // If it's an authorization error, automatically switch to read-only mode
                         if (errorData.error.status === 'PERMISSION_DENIED' || errorData.error.code === 401 || errorData.error.code === 403) {
-                            errorMessage += ' Pertimbangkan untuk menggunakan mod baca sahaja.';
+                            errorMessage += ' Mod baca sahaja telah diaktifkan secara automatik.';
                             READONLY_MODE = true;
                             document.getElementById('readonlyMode').checked = true;
+                            localStorage.setItem('readonlyMode', true);
+                            updateDataSourceStatus();
                             showSetupWarning('Mod baca sahaja diaktifkan kerana kebenaran API terhad.');
+                            
+                            // Save data to localStorage instead
+                            saveDataToLocalStorage();
                         }
                     } else {
-                        errorMessage += 'Ralat tidak diketahui';
+                        errorMessage += ' Ralat tidak diketahui';
                     }
                     
                     showNotification(errorMessage);
@@ -1447,7 +1519,10 @@
                 return true;
             } catch (error) {
                 console.error('Error saving data to Google Sheets:', error);
-                showNotification('Gagal menyimpan data: ' + error.message);
+                showNotification('Gagal menyimpan data: ' + error.message + '. Data disimpan secara tempatan.');
+                
+                // Save to localStorage as fallback
+                saveDataToLocalStorage();
                 return false;
             } finally {
                 showLoading(false);
@@ -1770,6 +1845,19 @@
             }, 3000);
         }
         
+        // Show setup info
+        function showSetupInfo(message) {
+            const infoElement = document.getElementById('setupInfoMessage');
+            infoElement.textContent = message;
+            infoElement.classList.add('show');
+        }
+        
+        // Hide setup info
+        function hideSetupInfo() {
+            const infoElement = document.getElementById('setupInfoMessage');
+            infoElement.classList.remove('show');
+        }
+        
         // Submit donation
         async function submitDonation() {
             const donorName = document.getElementById('donorName').value.trim();
@@ -1802,19 +1890,17 @@
             dayData.donorName = donorName;
             dayData.donorPhone = donorPhone;
             
-            // Save data
-            let saved = false;
-            if (USE_GOOGLE_SHEETS) {
-                saved = await saveDataToSheets();
-                if (saved && !READONLY_MODE) {
+            // Save data to localStorage first (always)
+            saveDataToLocalStorage();
+            
+            // Try to save to Google Sheets if enabled and not in read-only mode
+            let savedToSheets = false;
+            if (USE_GOOGLE_SHEETS && !READONLY_MODE) {
+                savedToSheets = await saveDataToSheets();
+                if (savedToSheets) {
                     await saveDonorToSheets(donorName, donorPhone, selectedDay, selectedSlotIndices);
                 }
-            } else {
-                saved = saveDataToLocalStorage();
             }
-            
-            // Even if saving to Google Sheets fails, we still want to update the UI
-            // if we're in read-only mode or using localStorage
             
             // Update UI
             updateMainProgressBar();
@@ -1831,10 +1917,16 @@
             // Show notification
             let notificationMessage = 'Terima kasih ' + donorName + ' atas sumbangan RM' + (selectedSlots.length * SLOT_PRICE) + '!';
             
-            if (USE_GOOGLE_SHEETS && READONLY_MODE) {
+            if (USE_GOOGLE_SHEETS) {
+                if (READONLY_MODE) {
+                    notificationMessage += ' (Data disimpan secara tempatan)';
+                } else if (!savedToSheets) {
+                    notificationMessage += ' (Data disimpan secara tempatan kerana masalah dengan Google Sheets)';
+                } else {
+                    notificationMessage += ' (Data disimpan ke Google Sheets)';
+                }
+            } else {
                 notificationMessage += ' (Data disimpan secara tempatan)';
-            } else if (USE_GOOGLE_SHEETS && !saved) {
-                notificationMessage += ' (Gagal menyimpan ke Google Sheets, data disimpan secara tempatan)';
             }
             
             showNotification(notificationMessage);
@@ -1880,27 +1972,28 @@
             if (confirm('Adakah anda pasti ingin reset semua data? Tindakan ini tidak boleh dibatalkan.')) {
                 initializeData();
                 
-                let saved = false;
+                // Always save to localStorage
+                saveDataToLocalStorage();
+                
+                // Try to save to Google Sheets if enabled and not in read-only mode
                 if (USE_GOOGLE_SHEETS && !READONLY_MODE) {
-                    saved = await saveDataToSheets();
-                } else {
-                    saved = saveDataToLocalStorage();
+                    await saveDataToSheets();
                 }
                 
-                if (saved || (USE_GOOGLE_SHEETS && READONLY_MODE)) {
-                    updateMainProgressBar();
-                    generateDayCards(1);
-                    generateDayCards(2);
-                    generateDayCards(3);
-                    generateDayCards(4);
-                    
-                    let notificationMessage = 'Semua data telah direset';
-                    if (USE_GOOGLE_SHEETS && READONLY_MODE) {
-                        notificationMessage += ' (secara tempatan)';
-                    }
-                    
-                    showNotification(notificationMessage);
+                updateMainProgressBar();
+                generateDayCards(1);
+                generateDayCards(2);
+                generateDayCards(3);
+                generateDayCards(4);
+                
+                let notificationMessage = 'Semua data telah direset';
+                if (USE_GOOGLE_SHEETS && !READONLY_MODE) {
+                    notificationMessage += ' (Data disimpan ke Google Sheets dan secara tempatan)';
+                } else {
+                    notificationMessage += ' (Data disimpan secara tempatan)';
                 }
+                
+                showNotification(notificationMessage);
             }
         }
         
@@ -1952,8 +2045,50 @@
             document.getElementById('localStorageOption').classList.toggle('active', !useGoogleSheets);
             document.getElementById('googleSheetsOption').classList.toggle('active', useGoogleSheets);
             
+            // Update data source status
+            updateDataSourceStatus();
+            
             // Reload data
             refreshData();
+        }
+        
+        // Use localStorage only
+        function useLocalStorageOnly() {
+            USE_GOOGLE_SHEETS = false;
+            localStorage.setItem('useGoogleSheets', false);
+            
+            // Update UI
+            document.getElementById('localStorageOption').classList.add('active');
+            document.getElementById('googleSheetsOption').classList.remove('active');
+            
+            // Update data source status
+            updateDataSourceStatus();
+            
+            // Hide setup modal
+            hideSetupModal();
+            
+            // Load data from localStorage
+            const loaded = loadDataFromLocalStorage();
+            
+            if (loaded) {
+                updateMainProgressBar();
+                generateDayCards(1);
+                generateDayCards(2);
+                generateDayCards(3);
+                generateDayCards(4);
+                generateDayOptions();
+                showNotification('Menggunakan Local Storage. Data disimpan secara tempatan.');
+            } else {
+                // Initialize with empty data
+                initializeData();
+                updateMainProgressBar();
+                generateDayCards(1);
+                generateDayCards(2);
+                generateDayCards(3);
+                generateDayCards(4);
+                generateDayOptions();
+                showNotification('Menggunakan Local Storage. Data disimpan secara tempatan.');
+            }
         }
         
         // Initialize the application
@@ -1984,6 +2119,9 @@
             if (savedReadonlyMode) {
                 showSetupWarning('Mod baca sahaja dipilih. Data tidak akan disimpan ke Google Sheets.');
             }
+            
+            // Update data source status
+            updateDataSourceStatus();
             
             // Load data
             let loaded = false;
@@ -2065,6 +2203,7 @@
             // Setup modal
             document.getElementById('closeSetupModal').addEventListener('click', hideSetupModal);
             document.getElementById('saveSpreadsheetId').addEventListener('click', saveSpreadsheetId);
+            document.getElementById('useLocalStorageBtn').addEventListener('click', useLocalStorageOnly);
             
             // Read-only mode toggle
             document.getElementById('readonlyMode').addEventListener('change', (e) => {
