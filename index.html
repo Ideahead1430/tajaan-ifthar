@@ -833,6 +833,34 @@
             color: var(--biru);
         }
 
+        /* Permission Check */
+        .permission-check {
+            background-color: #fff3e0;
+            border: 1px solid #ffcc02;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .permission-check h4 {
+            color: #e65100;
+            margin-bottom: 10px;
+        }
+
+        .permission-check p {
+            margin-bottom: 10px;
+        }
+
+        .permission-check button {
+            background-color: #ff9800;
+            color: var(--putih);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .header-content {
@@ -935,6 +963,14 @@
                     <p>5. Halaman web akan dimuatkan dengan data dari Google Sheets</p>
                 </div>
             </div>
+            
+            <div class="permission-check" id="permissionCheck" style="display: none;">
+                <h4>Uji Kebenaran API</h4>
+                <p>Sebelum menyimpan data, kami perlu menguji sama ada API Key anda mempunyai kebenaran yang diperlukan.</p>
+                <button id="testPermissionsBtn">Uji Kebenaran</button>
+                <div id="permissionResult"></div>
+            </div>
+            
             <div class="form-group">
                 <label for="spreadsheetId">ID Spreadsheet Google Sheets:</label>
                 <input type="text" id="spreadsheetId" placeholder="Contoh: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms">
@@ -1192,6 +1228,8 @@
         let API_KEY = '';
         let USE_GOOGLE_SHEETS = false;
         let READONLY_MODE = false;
+        let PERMISSIONS_CHECKED = false;
+        let HAS_WRITE_PERMISSION = false;
         let ramadanDays = [];
         
         // Initialize data structure
@@ -1216,12 +1254,70 @@
                 statusElement.className = 'data-source-status google-sheets';
                 if (READONLY_MODE) {
                     statusElement.textContent = 'Menggunakan Google Sheets (Mod Baca Sahaja) - Data disimpan secara tempatan';
+                } else if (!HAS_WRITE_PERMISSION) {
+                    statusElement.textContent = 'Menggunakan Google Sheets (Kebenaran Terhad) - Data disimpan secara tempatan';
                 } else {
                     statusElement.textContent = 'Menggunakan Google Sheets - Data disimpan ke Google Sheets';
                 }
             } else {
                 statusElement.className = 'data-source-status local-storage';
                 statusElement.textContent = 'Menggunakan Local Storage - Data disimpan secara tempatan';
+            }
+        }
+        
+        // Test API permissions
+        async function testApiPermissions() {
+            if (!SPREADSHEET_ID || !API_KEY) {
+                showSetupError('Sila masukkan ID Spreadsheet dan API Key terlebih dahulu');
+                return;
+            }
+            
+            const resultElement = document.getElementById('permissionResult');
+            resultElement.innerHTML = '<p>Menguji kebenaran API...</p>';
+            
+            try {
+                // Test read permission
+                const readUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '?key=' + API_KEY;
+                const readResponse = await fetch(readUrl);
+                
+                if (!readResponse.ok) {
+                    const errorData = await readResponse.json();
+                    resultElement.innerHTML = '<p style="color: red;">Gagal membaca data: ' + (errorData.error.message || 'Ralat tidak diketahui') + '</p>';
+                    return false;
+                }
+                
+                resultElement.innerHTML = '<p style="color: green;">✓ Kebenaran baca: OK</p>';
+                
+                // Test write permission
+                const writeUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/PermissionTest!A1:B1?valueInputOption=USER_ENTERED&key=' + API_KEY;
+                const writeResponse = await fetch(writeUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        range: 'PermissionTest!A1:B1',
+                        majorDimension: 'ROWS',
+                        values: [['Test', 'Data']]
+                    })
+                });
+                
+                if (!writeResponse.ok) {
+                    const errorData = await writeResponse.json();
+                    if (errorData.error && (errorData.error.code === 401 || errorData.error.code === 403)) {
+                        resultElement.innerHTML += '<p style="color: orange;">✗ Kebenaran tulis: Tidak sah</p>';
+                        return false;
+                    } else {
+                        resultElement.innerHTML += '<p style="color: red;">✗ Kebenaran tulis: Ralat - ' + (errorData.error.message || 'Ralat tidak diketahui') + '</p>';
+                        return false;
+                    }
+                }
+                
+                resultElement.innerHTML += '<p style="color: green;">✓ Kebenaran tulis: OK</p>';
+                return true;
+            } catch (error) {
+                resultElement.innerHTML = '<p style="color: red;">Ralat semasa ujian: ' + error.message + '</p>';
+                return false;
             }
         }
         
@@ -1270,7 +1366,7 @@
                 }
                 
                 // If sheet doesn't exist and not in read-only mode, try to create it
-                if (!sheetExists && !READONLY_MODE) {
+                if (!sheetExists && !READONLY_MODE && HAS_WRITE_PERMISSION) {
                     try {
                         const createSheetUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + ':batchUpdate?key=' + API_KEY;
                         const createSheetResponse = await fetch(createSheetUrl, {
@@ -1408,7 +1504,7 @@
                 } else {
                     // Initialize with empty data if sheet is empty
                     initializeData();
-                    if (!READONLY_MODE && sheetExists) {
+                    if (!READONLY_MODE && sheetExists && HAS_WRITE_PERMISSION) {
                         await saveDataToSheets();
                     }
                 }
@@ -1452,8 +1548,8 @@
                 return false;
             }
             
-            if (READONLY_MODE) {
-                showNotification('Mod baca sahaja diaktifkan. Data tidak disimpan ke Google Sheets.');
+            if (READONLY_MODE || !HAS_WRITE_PERMISSION) {
+                showNotification('Mod baca sahaja diaktifkan atau kebenaran API terhad. Data tidak disimpan ke Google Sheets.');
                 return false;
             }
             
@@ -1500,6 +1596,7 @@
                         if (errorData.error.status === 'PERMISSION_DENIED' || errorData.error.code === 401 || errorData.error.code === 403) {
                             errorMessage += ' Mod baca sahaja telah diaktifkan secara automatik.';
                             READONLY_MODE = true;
+                            HAS_WRITE_PERMISSION = false;
                             document.getElementById('readonlyMode').checked = true;
                             localStorage.setItem('readonlyMode', true);
                             updateDataSourceStatus();
@@ -1543,7 +1640,7 @@
         
         // Save donor information to separate sheet
         async function saveDonorToSheets(donorName, donorPhone, day, slots) {
-            if (!SPREADSHEET_ID || !API_KEY || READONLY_MODE) {
+            if (!SPREADSHEET_ID || !API_KEY || READONLY_MODE || !HAS_WRITE_PERMISSION) {
                 return false;
             }
             
@@ -1895,7 +1992,7 @@
             
             // Try to save to Google Sheets if enabled and not in read-only mode
             let savedToSheets = false;
-            if (USE_GOOGLE_SHEETS && !READONLY_MODE) {
+            if (USE_GOOGLE_SHEETS && !READONLY_MODE && HAS_WRITE_PERMISSION) {
                 savedToSheets = await saveDataToSheets();
                 if (savedToSheets) {
                     await saveDonorToSheets(donorName, donorPhone, selectedDay, selectedSlotIndices);
@@ -1918,7 +2015,7 @@
             let notificationMessage = 'Terima kasih ' + donorName + ' atas sumbangan RM' + (selectedSlots.length * SLOT_PRICE) + '!';
             
             if (USE_GOOGLE_SHEETS) {
-                if (READONLY_MODE) {
+                if (READONLY_MODE || !HAS_WRITE_PERMISSION) {
                     notificationMessage += ' (Data disimpan secara tempatan)';
                 } else if (!savedToSheets) {
                     notificationMessage += ' (Data disimpan secara tempatan kerana masalah dengan Google Sheets)';
@@ -1976,7 +2073,7 @@
                 saveDataToLocalStorage();
                 
                 // Try to save to Google Sheets if enabled and not in read-only mode
-                if (USE_GOOGLE_SHEETS && !READONLY_MODE) {
+                if (USE_GOOGLE_SHEETS && !READONLY_MODE && HAS_WRITE_PERMISSION) {
                     await saveDataToSheets();
                 }
                 
@@ -1987,7 +2084,7 @@
                 generateDayCards(4);
                 
                 let notificationMessage = 'Semua data telah direset';
-                if (USE_GOOGLE_SHEETS && !READONLY_MODE) {
+                if (USE_GOOGLE_SHEETS && !READONLY_MODE && HAS_WRITE_PERMISSION) {
                     notificationMessage += ' (Data disimpan ke Google Sheets dan secara tempatan)';
                 } else {
                     notificationMessage += ' (Data disimpan secara tempatan)';
@@ -2015,10 +2112,16 @@
             localStorage.setItem('apiKey', key);
             localStorage.setItem('readonlyMode', readonly);
             
+            // Reset permission check
+            PERMISSIONS_CHECKED = false;
+            HAS_WRITE_PERMISSION = false;
+            
             if (readonly) {
                 showSetupWarning('Mod baca sahaja dipilih. Data tidak akan disimpan ke Google Sheets.');
             } else {
                 hideSetupWarning();
+                // Show permission check
+                document.getElementById('permissionCheck').style.display = 'block';
             }
             
             hideSetupModal();
@@ -2205,12 +2308,30 @@
             document.getElementById('saveSpreadsheetId').addEventListener('click', saveSpreadsheetId);
             document.getElementById('useLocalStorageBtn').addEventListener('click', useLocalStorageOnly);
             
+            // Test permissions button
+            document.getElementById('testPermissionsBtn').addEventListener('click', async () => {
+                const hasPermission = await testApiPermissions();
+                HAS_WRITE_PERMISSION = hasPermission;
+                PERMISSIONS_CHECKED = true;
+                
+                if (hasPermission) {
+                    document.getElementById('permissionResult').innerHTML += '<p style="color: green;">API Key mempunyai kebenaran penuh.</p>';
+                } else {
+                    document.getElementById('permissionResult').innerHTML += '<p style="color: orange;">API Key hanya mempunyai kebenaran baca. Mod baca sahaja akan digunakan.</p>';
+                    READONLY_MODE = true;
+                    document.getElementById('readonlyMode').checked = true;
+                    showSetupWarning('Mod baca sahaja diaktifkan kerana kebenaran API terhad.');
+                }
+            });
+            
             // Read-only mode toggle
             document.getElementById('readonlyMode').addEventListener('change', (e) => {
                 if (e.target.checked) {
                     showSetupWarning('Mod baca sahaja dipilih. Data tidak akan disimpan ke Google Sheets.');
                 } else {
                     hideSetupWarning();
+                    // Show permission check if not checked
+                    document.getElementById('permissionCheck').style.display = 'block';
                 }
             });
             
