@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sumbangan Iftar, Sahur & Moreh Pelajar Tahfiz</title>
+    <title>Tempahan Iftar, Sahur & Moreh Pelajar Tahfiz</title>
     <style>
         /* Gaya Asas & Variabel */
         :root {
@@ -16,28 +16,29 @@
             --kelabu-sederhana: #9e9e9e;
             --merah: #f44336;
             --biru: #2196f3;
+            --kuning-terang: #ffeb3b;
         }
 
-        * {
+* {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        body {
+body {
             background-color: var(--kelabu-cerah);
             color: var(--kelabu-gelap);
             line-height: 1.6;
         }
 
-        .container {
+.container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
         }
 
-        /* Header & Hero Section */
+/* Header & Hero Section */
         header {
             background: linear-gradient(135deg, var(--hijau-utama), var(--hijau-lembut));
             color: var(--putih);
@@ -45,37 +46,37 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .header-content {
+.header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .logo {
+.logo {
             font-size: 1.8rem;
             font-weight: bold;
             display: flex;
             align-items: center;
         }
 
-        .logo-icon {
+.logo-icon {
             margin-right: 10px;
             font-size: 2rem;
         }
 
-        .contact-info {
+.contact-info {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
         }
 
-        .contact-item {
+.contact-item {
             display: flex;
             align-items: center;
             margin-bottom: 5px;
         }
 
-        .hero {
+.hero {
             background: linear-gradient(rgba(42, 125, 60, 0.8), rgba(42, 125, 60, 0.8)), url('https://picsum.photos/seed/ramadan2026/1200/600.jpg');
             background-size: cover;
             background-position: center;
@@ -84,26 +85,26 @@
             padding: 80px 20px;
         }
 
-        .hero h1 {
+.hero h1 {
             font-size: 2.5rem;
             margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
-        .hero p {
+.hero p {
             font-size: 1.2rem;
             max-width: 800px;
             margin: 0 auto 30px;
         }
 
-        .target-amount {
+.target-amount {
             font-size: 2rem;
             font-weight: bold;
             color: var(--emas-lembut);
             margin-bottom: 20px;
         }
 
-        .progress-container {
+.progress-container {
             background-color: rgba(255, 255, 255, 0.2);
             border-radius: 20px;
             height: 30px;
@@ -112,7 +113,7 @@
             overflow: hidden;
         }
 
-        .progress-bar {
+.progress-bar {
             height: 100%;
             background: linear-gradient(90deg, var(--emas-lembut), #ffd700);
             width: 0%;
@@ -125,7 +126,7 @@
             font-weight: bold;
         }
 
-        .donate-btn {
+.donate-btn {
             background-color: var(--emas-lembut);
             color: var(--kelabu-gelap);
             border: none;
@@ -138,18 +139,18 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .donate-btn:hover {
+.donate-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
         }
 
-        /* Info Program Section */
+/* Info Program Section */
         .info-program {
             padding: 60px 0;
             background-color: var(--putih);
         }
 
-        .section-title {
+.section-title {
             text-align: center;
             font-size: 2rem;
             color: var(--hijau-utama);
@@ -157,7 +158,7 @@
             position: relative;
         }
 
-        .section-title::after {
+.section-title::after {
             content: '';
             display: block;
             width: 80px;
@@ -166,14 +167,14 @@
             margin: 10px auto 0;
         }
 
-        .info-cards {
+.info-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
             margin-bottom: 40px;
         }
 
-        .info-card {
+.info-card {
             background-color: var(--kelabu-cerah);
             border-radius: 10px;
             padding: 25px;
@@ -181,21 +182,21 @@
             transition: transform 0.3s ease;
         }
 
-        .info-card:hover {
+.info-card:hover {
             transform: translateY(-5px);
         }
 
-        .info-card h3 {
+.info-card h3 {
             color: var(--hijau-utama);
             margin-bottom: 15px;
             font-size: 1.3rem;
         }
 
-        .info-card p {
+.info-card p {
             margin-bottom: 15px;
         }
 
-        .cost-breakdown {
+.cost-breakdown {
             background-color: var(--hijau-lembut);
             color: var(--putih);
             padding: 15px;
@@ -203,33 +204,33 @@
             margin-top: 20px;
         }
 
-        .cost-item {
+.cost-item {
             display: flex;
             justify-content: space-between;
             margin-bottom: 10px;
         }
 
-        .cost-item:last-child {
+.cost-item:last-child {
             margin-bottom: 0;
             font-weight: bold;
             border-top: 1px solid rgba(255, 255, 255, 0.3);
             padding-top: 10px;
         }
 
-        /* Ramadan Schedule Section */
+/* Ramadan Schedule Section */
         .ramadan-schedule {
             padding: 60px 0;
             background-color: var(--kelabu-cerah);
         }
 
-        .tabs {
+.tabs {
             display: flex;
             justify-content: center;
             margin-bottom: 30px;
             flex-wrap: wrap;
         }
 
-        .tab {
+.tab {
             background-color: var(--putih);
             border: 1px solid var(--kelabu-sederhana);
             padding: 10px 20px;
@@ -239,32 +240,32 @@
             transition: all 0.3s ease;
         }
 
-        .tab.active {
+.tab.active {
             background-color: var(--hijau-utama);
             color: var(--putih);
             border-color: var(--hijau-utama);
         }
 
-        .tab:hover {
+.tab:hover {
             background-color: var(--hijau-lembut);
             color: var(--putih);
         }
 
-        .tab-content {
+.tab-content {
             display: none;
         }
 
-        .tab-content.active {
+.tab-content.active {
             display: block;
         }
 
-        .day-grid {
+.day-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 20px;
         }
 
-        .day-card {
+.day-card {
             background-color: var(--putih);
             border-radius: 10px;
             padding: 20px;
@@ -272,11 +273,11 @@
             transition: all 0.3s ease;
         }
 
-        .day-card:hover {
+.day-card:hover {
             transform: translateY(-5px);
         }
 
-        .day-header {
+.day-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -285,46 +286,46 @@
             padding-bottom: 10px;
         }
 
-        .day-title {
+.day-title {
             font-weight: bold;
             color: var(--hijau-utama);
         }
 
-        .day-status {
+.day-status {
             padding: 3px 10px;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: bold;
         }
 
-        .status-empty {
+.status-empty {
             background-color: #ffebee;
             color: var(--merah);
         }
 
-        .status-half {
+.status-half {
             background-color: #fff8e1;
             color: #ff9800;
         }
 
-        .status-full {
+.status-full {
             background-color: #e8f5e9;
             color: var(--hijau-lembut);
         }
 
-        .day-target {
+.day-target {
             font-size: 0.9rem;
             margin-bottom: 10px;
         }
 
-        .day-collected {
+.day-collected {
             font-size: 1.1rem;
             font-weight: bold;
             color: var(--hijau-utama);
             margin-bottom: 15px;
         }
 
-        .day-progress {
+.day-progress {
             background-color: var(--kelabu-cerah);
             height: 8px;
             border-radius: 4px;
@@ -332,20 +333,20 @@
             margin-bottom: 15px;
         }
 
-        .day-progress-bar {
+.day-progress-bar {
             height: 100%;
             background-color: var(--hijau-lembut);
             width: 0%;
             transition: width 1s ease-in-out;
         }
 
-        .slots-container {
+.slots-container {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 5px;
         }
 
-        .slot {
+.slot {
             width: 100%;
             aspect-ratio: 1/1;
             border: 1px solid var(--kelabu-sederhana);
@@ -359,18 +360,24 @@
             font-size: 0.8rem;
         }
 
-        .slot:hover {
+.slot:hover {
             background-color: var(--kelabu-cerah);
         }
 
-        .slot.filled {
+.slot.filled {
             background-color: var(--hijau-lembut);
             color: var(--putih);
             border-color: var(--hijau-lembut);
             cursor: default;
         }
 
-        /* Donation Modal */
+.slot.selected {
+            background-color: var(--kuning-terang);
+            color: var(--kelabu-gelap);
+            border-color: var(--emas-lembut);
+        }
+
+/* Donation Modal */
         .modal {
             display: none;
             position: fixed;
@@ -384,11 +391,11 @@
             justify-content: center;
         }
 
-        .modal.active {
+.modal.active {
             display: flex;
         }
 
-        .modal-content {
+.modal-content {
             background-color: var(--putih);
             border-radius: 10px;
             padding: 30px;
@@ -400,7 +407,7 @@
             animation: modalOpen 0.3s ease;
         }
 
-        @keyframes modalOpen {
+@keyframes modalOpen {
             from {
                 opacity: 0;
                 transform: translateY(-50px);
@@ -411,7 +418,7 @@
             }
         }
 
-        .close-modal {
+.close-modal {
             position: absolute;
             top: 15px;
             right: 15px;
@@ -420,25 +427,25 @@
             color: var(--kelabu-sederhana);
         }
 
-        .close-modal:hover {
+.close-modal:hover {
             color: var(--kelabu-gelap);
         }
 
-        .donation-form {
+.donation-form {
             margin-top: 20px;
         }
 
-        .form-group {
+.form-group {
             margin-bottom: 20px;
         }
 
-        .form-group label {
+.form-group label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
         }
 
-        .form-group input,
+.form-group input,
         .form-group select {
             width: 100%;
             padding: 10px;
@@ -447,20 +454,20 @@
             font-size: 1rem;
         }
 
-        .donation-summary {
+.donation-summary {
             background-color: var(--kelabu-cerah);
             padding: 15px;
             border-radius: 8px;
             margin: 20px 0;
         }
 
-        .summary-row {
+.summary-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 10px;
         }
 
-        .summary-row:last-child {
+.summary-row:last-child {
             margin-bottom: 0;
             font-weight: bold;
             font-size: 1.1rem;
@@ -468,7 +475,7 @@
             padding-top: 10px;
         }
 
-        .submit-donation {
+.submit-donation {
             background-color: var(--hijau-lembut);
             color: var(--putih);
             border: none;
@@ -481,11 +488,11 @@
             transition: all 0.3s ease;
         }
 
-        .submit-donation:hover {
+.submit-donation:hover {
             background-color: var(--hijau-utama);
         }
 
-        /* Notification */
+/* Notification */
         .notification {
             position: fixed;
             top: 20px;
@@ -501,17 +508,17 @@
             max-width: 300px;
         }
 
-        .notification.show {
+.notification.show {
             transform: translateX(0);
         }
 
-        /* Admin Panel */
+/* Admin Panel */
         .admin-panel {
             padding: 60px 0;
             background-color: var(--putih);
         }
 
-        .admin-controls {
+.admin-controls {
             display: flex;
             justify-content: center;
             gap: 20px;
@@ -519,7 +526,7 @@
             flex-wrap: wrap;
         }
 
-        .admin-btn {
+.admin-btn {
             background-color: var(--biru);
             color: var(--putih);
             border: none;
@@ -530,19 +537,19 @@
             transition: all 0.3s ease;
         }
 
-        .admin-btn:hover {
+.admin-btn:hover {
             background-color: #0d47a1;
         }
 
-        .admin-btn.danger {
+.admin-btn.danger {
             background-color: var(--merah);
         }
 
-        .admin-btn.danger:hover {
+.admin-btn.danger:hover {
             background-color: #b71c1c;
         }
 
-        /* Quote Section */
+/* Quote Section */
         .quote-section {
             padding: 60px 0;
             background-color: var(--hijau-utama);
@@ -550,7 +557,7 @@
             text-align: center;
         }
 
-        .quote {
+.quote {
             font-size: 1.5rem;
             font-style: italic;
             max-width: 800px;
@@ -559,7 +566,7 @@
             padding: 0 30px;
         }
 
-        .quote::before,
+.quote::before,
         .quote::after {
             content: '"';
             font-size: 3rem;
@@ -568,57 +575,57 @@
             opacity: 0.5;
         }
 
-        .quote::before {
+.quote::before {
             top: -20px;
             left: 0;
         }
 
-        .quote::after {
+.quote::after {
             bottom: -40px;
             right: 0;
         }
 
-        .quote-source {
+.quote-source {
             margin-top: 20px;
             font-size: 1rem;
             color: var(--emas-lembut);
         }
 
-        /* Footer */
+/* Footer */
         footer {
             background-color: var(--kelabu-gelap);
             color: var(--putih);
             padding: 40px 0 20px;
         }
 
-        .footer-content {
+.footer-content {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 30px;
             margin-bottom: 30px;
         }
 
-        .footer-section h3 {
+.footer-section h3 {
             margin-bottom: 15px;
             color: var(--emas-lembut);
         }
 
-        .footer-section p,
+.footer-section p,
         .footer-section li {
             margin-bottom: 10px;
         }
 
-        .footer-section ul {
+.footer-section ul {
             list-style: none;
         }
 
-        .footer-bottom {
+.footer-bottom {
             text-align: center;
             padding-top: 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Loading Spinner */
+/* Loading Spinner */
         .loading-spinner {
             display: none;
             width: 50px;
@@ -630,11 +637,11 @@
             margin: 20px auto;
         }
 
-        @keyframes spin {
+@keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        .loading-overlay {
+.loading-overlay {
             display: none;
             position: fixed;
             top: 0;
@@ -647,11 +654,11 @@
             align-items: center;
         }
 
-        .loading-overlay.active {
+.loading-overlay.active {
             display: flex;
         }
 
-        /* Google Apps Script Setup Modal */
+/* Google Apps Script Setup Modal */
         .setup-modal {
             display: none;
             position: fixed;
@@ -665,11 +672,11 @@
             justify-content: center;
         }
 
-        .setup-modal.active {
+.setup-modal.active {
             display: flex;
         }
 
-        .setup-content {
+.setup-content {
             background-color: var(--putih);
             border-radius: 10px;
             padding: 30px;
@@ -680,27 +687,27 @@
             position: relative;
         }
 
-        .setup-steps {
+.setup-steps {
             margin: 20px 0;
         }
 
-        .setup-step {
+.setup-step {
             margin-bottom: 20px;
             padding: 15px;
             background-color: var(--kelabu-cerah);
             border-radius: 8px;
         }
 
-        .setup-step h3 {
+.setup-step h3 {
             color: var(--hijau-utama);
             margin-bottom: 10px;
         }
 
-        .setup-step p {
+.setup-step p {
             margin-bottom: 10px;
         }
 
-        .setup-step code {
+.setup-step code {
             background-color: var(--kelabu-gelap);
             color: var(--putih);
             padding: 2px 5px;
@@ -708,16 +715,16 @@
             font-family: monospace;
         }
 
-        .setup-step a {
+.setup-step a {
             color: var(--hijau-utama);
             text-decoration: none;
         }
 
-        .setup-step a:hover {
+.setup-step a:hover {
             text-decoration: underline;
         }
 
-        .error-message {
+.error-message {
             background-color: #ffebee;
             color: var(--merah);
             padding: 10px;
@@ -726,11 +733,11 @@
             display: none;
         }
 
-        .error-message.show {
+.error-message.show {
             display: block;
         }
 
-        .warning-message {
+.warning-message {
             background-color: #fff8e1;
             color: #ff9800;
             padding: 10px;
@@ -739,11 +746,11 @@
             display: none;
         }
 
-        .warning-message.show {
+.warning-message.show {
             display: block;
         }
 
-        .success-message {
+.success-message {
             background-color: #e8f5e9;
             color: var(--hijau-lembut);
             padding: 10px;
@@ -752,11 +759,11 @@
             display: none;
         }
 
-        .success-message.show {
+.success-message.show {
             display: block;
         }
 
-        .info-message {
+.info-message {
             background-color: #e3f2fd;
             color: var(--biru);
             padding: 10px;
@@ -765,18 +772,18 @@
             display: none;
         }
 
-        .info-message.show {
+.info-message.show {
             display: block;
         }
 
-        /* Alternative Data Source Toggle */
+/* Alternative Data Source Toggle */
         .data-source-toggle {
             display: flex;
             justify-content: center;
             margin-bottom: 20px;
         }
 
-        .data-source-option {
+.data-source-option {
             padding: 10px 20px;
             background-color: var(--putih);
             border: 1px solid var(--kelabu-sederhana);
@@ -784,21 +791,21 @@
             transition: all 0.3s ease;
         }
 
-        .data-source-option:first-child {
+.data-source-option:first-child {
             border-radius: 5px 0 0 5px;
         }
 
-        .data-source-option:last-child {
+.data-source-option:last-child {
             border-radius: 0 5px 5px 0;
         }
 
-        .data-source-option.active {
+.data-source-option.active {
             background-color: var(--hijau-utama);
             color: var(--putih);
             border-color: var(--hijau-utama);
         }
 
-        /* Data Source Status */
+/* Data Source Status */
         .data-source-status {
             text-align: center;
             margin-bottom: 20px;
@@ -806,67 +813,67 @@
             border-radius: 5px;
         }
 
-        .data-source-status.apps-script {
+.data-source-status.apps-script {
             background-color: #e8f5e9;
             color: var(--hijau-lembut);
         }
 
-        .data-source-status.local-storage {
+.data-source-status.local-storage {
             background-color: #e3f2fd;
             color: var(--biru);
         }
 
-        /* Responsive Design */
+/* Responsive Design */
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
                 text-align: center;
             }
 
-            .contact-info {
+.contact-info {
                 align-items: center;
                 margin-top: 10px;
             }
 
-            .hero h1 {
+.hero h1 {
                 font-size: 2rem;
             }
 
-            .target-amount {
+.target-amount {
                 font-size: 1.5rem;
             }
 
-            .day-grid {
+.day-grid {
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
 
-            .slots-container {
+.slots-container {
                 grid-template-columns: repeat(5, 1fr);
             }
 
-            .footer-content {
+.footer-content {
                 grid-template-columns: 1fr;
             }
         }
 
-        @media (max-width: 480px) {
+@media (max-width: 480px) {
             .hero {
                 padding: 60px 15px;
             }
 
-            .hero h1 {
+.hero h1 {
                 font-size: 1.8rem;
             }
 
-            .hero p {
+.hero p {
                 font-size: 1rem;
             }
 
-            .day-grid {
+.day-grid {
                 grid-template-columns: 1fr;
             }
 
-            .tabs {
+.tabs {
                 justify-content: flex-start;
                 overflow-x: auto;
                 padding-bottom: 10px;
@@ -880,26 +887,26 @@
         <div class="loading-spinner"></div>
     </div>
 
-    <!-- Google Apps Script Setup Modal -->
+<!-- Google Apps Script Setup Modal -->
     <div class="setup-modal" id="setupModal">
         <div class="setup-content">
-            <span class="close-modal" id="closeSetupModal">&times;</span>
+            <span class="close-modal" id="closeSetupModal">×</span>
             <h2>Panduan Setup Google Apps Script</h2>
             <div class="setup-steps">
                 <div class="setup-step">
                     <h3>Langkah 1: Buat Google Apps Script</h3>
                     <p>1. Pergi ke <a href="https://script.google.com" target="_blank">Google Apps Script</a></p>
                     <p>2. Klik "New Project" untuk membuat projek baru</p>
-                    <p>3. Namakan projek sebagai "Sumbangan Ramadan 2026"</p>
+                    <p>3. Namakan projek sebagai "Tempahan Ramadan 2026"</p>
                 </div>
                 <div class="setup-step">
                     <h3>Langkah 2: Salin Kod Apps Script</h3>
-                    <p>1. Salin kod Apps Script yang disediakan</p>
+                    <p>1. Salin kod Apps Script yang disediakan di bawah</p>
                     <p>2. Gantikan kod dalam editor dengan kod yang disalin</p>
                     <p>3. Simpan projek (Ctrl+S atau klik ikon simpan)</p>
                 </div>
                 <div class="setup-step">
-                    <h3>Langkah 3: Deploy sebagai Web App</h3>
+                    <h3>Langkah 3: Deploy sebagai Web App (PENTING!)</h3>
                     <p>1. Klik "Deploy" > "New deployment"</p>
                     <p>2. Pilih jenis "Web app"</p>
                     <p>3. Tetapkan "Execute as" kepada "Me" dan "Who has access" kepada "Anyone"</p>
@@ -910,11 +917,10 @@
                     <p>1. Masukkan URL Web App di ruangan yang disediakan</p>
                     <p>2. Klik "Simpan & Sambung"</p>
                     <p>3. Tunggu beberapa saat untuk sambungan dibuat</p>
-                    <p>4. Halaman web akan dimuatkan dengan data dari Google Apps Script</p>
                 </div>
             </div>
-            
-            <div class="form-group">
+
+<div class="form-group">
                 <label for="scriptUrl">URL Web App Google Apps Script:</label>
                 <input type="text" id="scriptUrl" placeholder="Contoh: https://script.google.com/macros/s/abcdef123456/exec">
             </div>
@@ -926,7 +932,7 @@
         </div>
     </div>
 
-    <!-- Header -->
+<!-- Header -->
     <header>
         <div class="container">
             <div class="header-content">
@@ -949,20 +955,20 @@
         </div>
     </header>
 
-    <!-- Hero Section -->
+<!-- Hero Section -->
     <section class="hero">
         <div class="container">
             <h1>Rezeki Anda, Nikmat Mereka</h1>
-            <p>Sumbang untuk jamuan iftar, sahur dan moreh pelajar dan warga Tahfiz sepanjang bulan Ramadan 1446H / 2026M</p>
+            <p>Tempah untuk jamuan iftar, sahur dan moreh pelajar dan warga Tahfiz sepanjang bulan Ramadan 1446H / 2026M</p>
             <div class="target-amount">Sasaran: RM 37,500</div>
             <div class="progress-container">
                 <div class="progress-bar" id="mainProgressBar">0%</div>
             </div>
-            <button class="donate-btn" id="mainDonateBtn">Sumbang Sekarang</button>
+            <button class="donate-btn" id="mainDonateBtn">Tempah Sekarang</button>
         </div>
     </section>
 
-    <!-- Info Program Section -->
+<!-- Info Program Section -->
     <section class="info-program">
         <div class="container">
             <h2 class="section-title">Maklumat Program</h2>
@@ -970,10 +976,10 @@
                 <div class="info-card">
                     <h3>Tentang Program</h3>
                     <p>Program ini bertujuan untuk menyediakan jamuan iftar, sahur dan moreh untuk 25 orang pelajar dan warga Tahfiz di Maahad Tahfiz Al-Quran Lil Muttaqin sepanjang bulan Ramadan.</p>
-                    <p>Setiap sumbangan anda akan membantu meringankan beban mereka dan membolehkan mereka memberi tumpuan sepenuhnya kepada ibadah dan pembelajaran Al-Quran.</p>
+                    <p>Setiap tempahan anda akan membantu meringankan beban mereka dan membolehkan mereka memberi tumpuan sepenuhnya kepada ibadah dan pembelajaran Al-Quran.</p>
                 </div>
                 <div class="info-card">
-                    <h3>Konsep Slot Sumbangan</h3>
+                    <h3>Konsep Slot Tempahan</h3>
                     <p>1 slot = 1 set berbuka + 1 set sahur + 1 set moreh untuk 1 orang</p>
                     <p>Nilai: RM50 / seorang / sehari</p>
                     <div class="cost-breakdown">
@@ -994,47 +1000,47 @@
                 <div class="info-card">
                     <h3>Siapa Penerima Manfaat?</h3>
                     <p>25 orang pelajar dan warga Tahfiz di Maahad Tahfiz Al-Quran Lil Muttaqin yang akan menerima manfaat langsung dari program ini.</p>
-                    <p>Mereka adalah golongan yang berdedikasi untuk menghafaz dan mempelajari Al-Quran, dan sumbangan anda akan membantu mereka dalam perjalanan ini.</p>
+                    <p>Mereka adalah golongan yang berdedikasi untuk menghafaz dan mempelajari Al-Quran, dan tempahan anda akan membantu mereka dalam perjalanan ini.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Ramadan Schedule Section -->
+<!-- Ramadan Schedule Section -->
     <section class="ramadan-schedule">
         <div class="container">
             <h2 class="section-title">Jadual Ramadan</h2>
-            
-            <div class="data-source-status" id="dataSourceStatus">
+
+<div class="data-source-status" id="dataSourceStatus">
                 <!-- Will be populated by JavaScript -->
             </div>
-            
-            <div class="tabs">
+
+<div class="tabs">
                 <div class="tab active" data-week="1">Minggu 1</div>
                 <div class="tab" data-week="2">Minggu 2</div>
                 <div class="tab" data-week="3">Minggu 3</div>
                 <div class="tab" data-week="4">Minggu 4</div>
             </div>
-            
-            <div class="tab-content active" id="week1">
+
+<div class="tab-content active" id="week1">
                 <div class="day-grid" id="week1Grid">
                     <!-- Days 1-7 will be generated by JavaScript -->
                 </div>
             </div>
-            
-            <div class="tab-content" id="week2">
+
+<div class="tab-content" id="week2">
                 <div class="day-grid" id="week2Grid">
                     <!-- Days 8-14 will be generated by JavaScript -->
                 </div>
             </div>
-            
-            <div class="tab-content" id="week3">
+
+<div class="tab-content" id="week3">
                 <div class="day-grid" id="week3Grid">
                     <!-- Days 15-21 will be generated by JavaScript -->
                 </div>
             </div>
-            
-            <div class="tab-content" id="week4">
+
+<div class="tab-content" id="week4">
                 <div class="day-grid" id="week4Grid">
                     <!-- Days 22-30 will be generated by JavaScript -->
                 </div>
@@ -1042,7 +1048,7 @@
         </div>
     </section>
 
-    <!-- Quote Section -->
+<!-- Quote Section -->
     <section class="quote-section">
         <div class="container">
             <div class="quote">
@@ -1052,7 +1058,7 @@
         </div>
     </section>
 
-    <!-- Admin Panel -->
+<!-- Admin Panel -->
     <section class="admin-panel">
         <div class="container">
             <h2 class="section-title">Panel Pentadbir</h2>
@@ -1069,7 +1075,7 @@
         </div>
     </section>
 
-    <!-- Footer -->
+<!-- Footer -->
     <footer>
         <div class="container">
             <div class="footer-content">
@@ -1094,16 +1100,16 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 Musolla Lil Muttaqin. Hak Cipta Terpelihara.</p>
+                <p>© 2026 Musolla Lil Muttaqin. Hak Cipta Terpelihara.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Donation Modal -->
+<!-- Donation Modal -->
     <div class="modal" id="donationModal">
         <div class="modal-content">
-            <span class="close-modal" id="closeModal">&times;</span>
-            <h2>Buat Sumbangan</h2>
+            <span class="close-modal" id="closeModal">×</span>
+            <h2>Buat Tempahan</h2>
             <div class="donation-form">
                 <div class="form-group">
                     <label for="donorName">Nama Penderma</label>
@@ -1120,7 +1126,8 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="donationSlots">Pilih Slot</label>
+                    <!-- PERHATIAN: 'for' telah dibuang dari label ini -->
+                    <label>Pilih Slot</label>
                     <div id="slotsSelection">
                         <p>Sila pilih hari terlebih dahulu</p>
                     </div>
@@ -1135,21 +1142,21 @@
                         <span>RM50</span>
                     </div>
                     <div class="summary-row">
-                        <span>Jumlah Sumbangan:</span>
+                        <span>Jumlah Tempahan:</span>
                         <span id="summaryTotal">RM0</span>
                     </div>
                 </div>
-                <button class="submit-donation" id="submitDonation">Hantar Sumbangan</button>
+                <button class="submit-donation" id="submitDonation">Hantar Tempahan</button>
             </div>
         </div>
     </div>
 
-    <!-- Notification -->
+<!-- Notification -->
     <div class="notification" id="notification">
-        Terima kasih atas sumbangan anda!
+        Terima kasih atas tempahan anda!
     </div>
 
-    <script>
+<script>
         // Data Structure for Ramadan Days
         const TOTAL_DAYS = 30;
         const SLOTS_PER_DAY = 25;
@@ -1189,7 +1196,7 @@
             }
         }
         
-        // Load data from Google Apps Script
+        // Ganti fungsi loadDataFromAppsScript dengan yang ini
         async function loadDataFromAppsScript() {
             if (!SCRIPT_URL) {
                 showSetupError('Sila masukkan URL Web App yang sah');
@@ -1199,45 +1206,73 @@
             showLoading(true);
             
             try {
-                const response = await fetch(SCRIPT_URL + '?action=getData');
+                // Buat URL dengan callback JSONP
+                const callbackName = 'jsonpCallback_' + Date.now();
+                const url = `${SCRIPT_URL}?action=getData&callback=${callbackName}`;
                 
-                if (!response.ok) {
-                    throw new Error('Gagal mengakses Google Apps Script');
-                }
+                // Buat elemen script untuk permintaan JSONP
+                const script = document.createElement('script');
+                script.src = url;
+                script.onerror = () => {
+                    showSetupError('Gagal memuatkan skrip dari Google Apps Script. Sila semak URL dan sambungan internet.');
+                    showLoading(false);
+                };
                 
-                const data = await response.json();
-                
-                if (data.status === 'success' && data.data) {
-                    ramadanDays = data.data;
-                    
-                    // Fill missing days if any
-                    for (let i = 1; i <= TOTAL_DAYS; i++) {
-                        if (!ramadanDays.find(d => d.day === i)) {
-                            ramadanDays.push({
-                                day: i,
-                                slots: Array(SLOTS_PER_DAY).fill(false),
-                                donorName: '',
-                                donorPhone: '',
-                                collected: 0
-                            });
+                // Set up callback function
+                window[callbackName] = function(data) {
+                    // Clean up
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+
+                    if (data.status === 'success' && data.data) {
+                        ramadanDays = data.data;
+                        // Isi hari yang hilang
+                        for (let i = 1; i <= TOTAL_DAYS; i++) {
+                            if (!ramadanDays.find(d => d.day === i)) {
+                                ramadanDays.push({
+                                    day: i,
+                                    slots: Array(SLOTS_PER_DAY).fill(false),
+                                    donorName: '',
+                                    donorPhone: '',
+                                    collected: 0
+                                });
+                            }
                         }
+                        ramadanDays.sort((a, b) => a.day - b.day);
+
+                        hideSetupError();
+                        updateMainProgressBar();
+                        generateDayCards(1);
+                        generateDayCards(2);
+                        generateDayCards(3);
+                        generateDayCards(4);
+                        generateDayOptions();
+                        showSetupSuccess('Google Apps Script telah disambungkan dengan jayanya');
+                    } else {
+                        showSetupError(data.message || 'Ralat tidak diketahui dari Apps Script');
                     }
-                    
-                    // Sort by day
-                    ramadanDays.sort((a, b) => a.day - b.day);
-                    
-                    hideSetupError();
-                    return true;
-                } else {
-                    showSetupError(data.message || 'Ralat tidak diketahui');
-                    return false;
-                }
+                    showLoading(false);
+                };
+                
+                // Tambah skrip ke halaman
+                document.body.appendChild(script);
+                
+                // Set timeout
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                        document.body.removeChild(script);
+                        showSetupError('Timeout semasa memuatkan data. Sila cuba lagi.');
+                        showLoading(false);
+                    }
+                }, 10000);
+                
+                return true;
             } catch (error) {
                 console.error('Error loading data from Google Apps Script:', error);
                 showSetupError('Ralat semasa memuatkan data: ' + error.message);
-                return false;
-            } finally {
                 showLoading(false);
+                return false;
             }
         }
         
@@ -1270,38 +1305,50 @@
             showLoading(true);
             
             try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'saveData',
-                        data: ramadanDays
-                    })
-                });
+                const callbackName = 'jsonpCallback_' + Date.now();
+                const dataParam = encodeURIComponent(JSON.stringify(ramadanDays));
+                const url = `${SCRIPT_URL}?action=saveData&data=${dataParam}&callback=${callbackName}`;
                 
-                if (!response.ok) {
-                    throw new Error('Gagal menyimpan data ke Google Apps Script');
-                }
+                const script = document.createElement('script');
+                script.src = url;
+                script.onerror = () => {
+                    showNotification('Gagal menyimpan. Data disimpan secara tempatan.');
+                    saveDataToLocalStorage();
+                    showLoading(false);
+                };
                 
-                const result = await response.json();
+                window[callbackName] = function(result) {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+
+                    if (result.status === 'success') {
+                        showNotification('Data telah disimpan ke Google Apps Script');
+                    } else {
+                        showNotification(`Gagal menyimpan: ${result.message || 'Ralat tidak diketahui'}. Data disimpan secara tempatan.`);
+                        saveDataToLocalStorage();
+                    }
+                    showLoading(false);
+                };
                 
-                if (result.status === 'success') {
-                    return true;
-                } else {
-                    showNotification('Gagal menyimpan data: ' + (result.message || 'Ralat tidak diketahui'));
-                    return false;
-                }
+                document.body.appendChild(script);
+                
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                        document.body.removeChild(script);
+                        showNotification('Timeout semasa menyimpan. Data disimpan secara tempatan.');
+                        saveDataToLocalStorage();
+                        showLoading(false);
+                    }
+                }, 10000);
+                
+                return true;
             } catch (error) {
                 console.error('Error saving data to Google Apps Script:', error);
                 showNotification('Gagal menyimpan data: ' + error.message + '. Data disimpan secara tempatan.');
-                
-                // Save to localStorage as fallback
                 saveDataToLocalStorage();
-                return false;
-            } finally {
                 showLoading(false);
+                return false;
             }
         }
         
@@ -1319,37 +1366,37 @@
         
         // Save donor information to Google Apps Script
         async function saveDonorToAppsScript(donorName, donorPhone, day, slots) {
-            if (!SCRIPT_URL) {
-                return false;
-            }
+            if (!SCRIPT_URL) return false;
             
             try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'saveDonor',
-                        donorData: {
-                            name: donorName,
-                            phone: donorPhone,
-                            day: day,
-                            slots: slots,
-                            amount: slots.length * SLOT_PRICE,
-                            date: new Date().toISOString()
-                        }
-                    })
-                });
+                const callbackName = 'jsonpCallback_' + Date.now();
+                const donorData = {
+                    name: donorName, phone: donorPhone, day: day, slots: slots,
+                    amount: slots.length * SLOT_PRICE, date: new Date().toISOString()
+                };
+                const dataParam = encodeURIComponent(JSON.stringify(donorData));
+                const url = `${SCRIPT_URL}?action=saveDonor&donorData=${dataParam}&callback=${callbackName}`;
+
+                const script = document.createElement('script');
+                script.src = url;
                 
-                if (!response.ok) {
-                    throw new Error('Failed to save donor data to Google Apps Script');
-                }
+                window[callbackName] = function(result) {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                };
                 
-                const result = await response.json();
-                return result.status === 'success';
+                document.body.appendChild(script);
+                
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                        document.body.removeChild(script);
+                    }
+                }, 10000);
+                
+                return true;
             } catch (error) {
-                console.error('Error saving donor data to Google Apps Script:', error);
+                console.error('Error saving donor data:', error);
                 return false;
             }
         }
@@ -1406,22 +1453,22 @@
                 let slotsHTML = '';
                 for (let j = 0; j < dayData.slots.length; j++) {
                     const slotClass = dayData.slots[j] ? 'slot filled' : 'slot';
-                    slotsHTML += '<div class="' + slotClass + '" data-day="' + i + '" data-slot="' + j + '">' + (dayData.slots[j] ? '✓' : j + 1) + '</div>';
+                    slotsHTML += `<div class="${slotClass}" data-day="${i}" data-slot="${j}">${dayData.slots[j] ? '✓' : j + 1}</div>`;
                 }
                 
                 dayCard.innerHTML = 
-                    '<div class="day-header">' +
-                        '<div class="day-title">Ramadan ' + i + '</div>' +
-                        '<div class="day-status ' + statusClass + '">' + statusText + '</div>' +
-                    '</div>' +
-                    '<div class="day-target">Sasaran: RM' + DAILY_TARGET + '</div>' +
-                    '<div class="day-collected">Terkumpul: RM' + dayData.collected + '</div>' +
-                    '<div class="day-progress">' +
-                        '<div class="day-progress-bar" style="width: ' + percentage + '%"></div>' +
-                    '</div>' +
-                    '<div class="slots-container">' +
-                        slotsHTML +
-                    '</div>';
+                    `<div class="day-header">
+                        <div class="day-title">Ramadan ${i}</div>
+                        <div class="day-status ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="day-target">Sasaran: RM${DAILY_TARGET}</div>
+                    <div class="day-collected">Terkumpul: RM${dayData.collected}</div>
+                    <div class="day-progress">
+                        <div class="day-progress-bar" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="slots-container">
+                        ${slotsHTML}
+                    </div>`;
                 
                 weekGrid.appendChild(dayCard);
             }
@@ -1614,7 +1661,7 @@
             updateDonationSummary();
             
             // Show notification
-            let notificationMessage = 'Terima kasih ' + donorName + ' atas sumbangan RM' + (selectedSlots.length * SLOT_PRICE) + '!';
+            let notificationMessage = `Terima kasih ${donorName} atas tempahan RM${selectedSlots.length * SLOT_PRICE}!`;
             
             if (USE_APPS_SCRIPT) {
                 if (!savedToAppsScript) {
