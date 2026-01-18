@@ -76,8 +76,70 @@ body {
             margin-bottom: 5px;
         }
 
+.admin-login-btn {
+            background-color: var(--biru);
+            color: var(--putih);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+.admin-login-btn:hover {
+            background-color: #0d47a1;
+        }
+
+.admin-logout-btn {
+            background-color: var(--merah);
+            color: var(--putih);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+.admin-logout-btn:hover {
+            background-color: #b71c1c;
+        }
+
+.admin-status {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: var(--emas-lembut);
+        }
+
+.connection-status {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            font-size: 0.9rem;
+        }
+
+.connection-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+.connection-online {
+            background-color: #4caf50;
+        }
+
+.connection-offline {
+            background-color: #f44336;
+        }
+
 .hero {
-            background: linear-gradient(rgba(42, 125, 60, 0.8), rgba(42, 125, 60, 0.8)), url('https://picsum.photos/seed/ramadan2026/1200/600.jpg');
+            background: linear-gradient(rgba(42, 125, 60, 0.8), rgba(42, 125, 60, 0.8)), url('https://arleta.site/interactivelink/2950/Picture1.jpg');
             background-size: cover;
             background-position: center;
             color: var(--putih);
@@ -512,10 +574,19 @@ body {
             transform: translateX(0);
         }
 
+.notification.error {
+            background-color: var(--merah);
+        }
+
 /* Admin Panel */
         .admin-panel {
             padding: 60px 0;
             background-color: var(--putih);
+            display: none; /* Hidden by default */
+        }
+
+.admin-panel.active {
+            display: block;
         }
 
 .admin-controls {
@@ -547,6 +618,53 @@ body {
 
 .admin-btn.danger:hover {
             background-color: #b71c1c;
+        }
+
+/* Admin Login Modal */
+        .login-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 4000;
+            align-items: center;
+            justify-content: center;
+        }
+
+.login-modal.active {
+            display: flex;
+        }
+
+.login-content {
+            background-color: var(--putih);
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            animation: modalOpen 0.3s ease;
+        }
+
+.login-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--hijau-utama);
+        }
+
+.login-error {
+            background-color: #ffebee;
+            color: var(--merah);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+.login-error.show {
+            display: block;
         }
 
 /* Quote Section */
@@ -776,35 +894,6 @@ body {
             display: block;
         }
 
-/* Alternative Data Source Toggle */
-        .data-source-toggle {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-.data-source-option {
-            padding: 10px 20px;
-            background-color: var(--putih);
-            border: 1px solid var(--kelabu-sederhana);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-.data-source-option:first-child {
-            border-radius: 5px 0 0 5px;
-        }
-
-.data-source-option:last-child {
-            border-radius: 0 5px 5px 0;
-        }
-
-.data-source-option.active {
-            background-color: var(--hijau-utama);
-            color: var(--putih);
-            border-color: var(--hijau-utama);
-        }
-
 /* Data Source Status */
         .data-source-status {
             text-align: center;
@@ -887,6 +976,24 @@ body {
         <div class="loading-spinner"></div>
     </div>
 
+<!-- Admin Login Modal -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-content">
+            <span class="close-modal" id="closeLoginModal">×</span>
+            <h2 class="login-title">Log Masuk Admin</h2>
+            <div class="login-error" id="loginError">Nama pengguna atau katalaluan salah</div>
+            <div class="form-group">
+                <label for="adminUsername">Nama Pengguna</label>
+                <input type="text" id="adminUsername" placeholder="Masukkan nama pengguna">
+            </div>
+            <div class="form-group">
+                <label for="adminPassword">Katalaluan</label>
+                <input type="password" id="adminPassword" placeholder="Masukkan katalaluan">
+            </div>
+            <button class="submit-donation" id="loginBtn">Log Masuk</button>
+        </div>
+    </div>
+
 <!-- Google Apps Script Setup Modal -->
     <div class="setup-modal" id="setupModal">
         <div class="setup-content">
@@ -928,7 +1035,6 @@ body {
             <div class="success-message" id="setupSuccessMessage"></div>
             <div class="info-message" id="setupInfoMessage"></div>
             <button class="submit-donation" id="saveScriptUrl">Simpan & Sambung</button>
-            <button class="admin-btn" id="useLocalStorageBtn" style="margin-top: 10px; width: 100%;">Gunakan Local Storage Sahaja</button>
         </div>
     </div>
 
@@ -949,6 +1055,17 @@ body {
                     </div>
                     <div class="contact-item">
                         <span>En. Idwan: 012 374 7452</span>
+                    </div>
+                    <div id="adminSection">
+                        <button class="admin-login-btn" id="adminLoginBtn">Log Masuk Admin</button>
+                        <div class="admin-status" id="adminStatus" style="display: none;">
+                            <span id="adminUsernameDisplay"></span>
+                            <button class="admin-logout-btn" id="adminLogoutBtn">Log Keluar</button>
+                        </div>
+                    </div>
+                    <div class="connection-status" id="connectionStatus">
+                        <div class="connection-indicator connection-offline" id="connectionIndicator"></div>
+                        <span id="connectionText">Menyambung...</span>
                     </div>
                 </div>
             </div>
@@ -1059,13 +1176,9 @@ body {
     </section>
 
 <!-- Admin Panel -->
-    <section class="admin-panel">
+    <section class="admin-panel" id="adminPanel">
         <div class="container">
             <h2 class="section-title">Panel Pentadbir</h2>
-            <div class="data-source-toggle">
-                <div class="data-source-option active" id="localStorageOption">Local Storage</div>
-                <div class="data-source-option" id="appsScriptOption">Google Apps Script</div>
-            </div>
             <div class="admin-controls">
                 <button class="admin-btn" id="refreshDataBtn">Segar Semula Data</button>
                 <button class="admin-btn" id="exportDataBtn">Eksport Data</button>
@@ -1126,7 +1239,6 @@ body {
                     </select>
                 </div>
                 <div class="form-group">
-                    <!-- PERHATIAN: 'for' telah dibuang dari label ini -->
                     <label>Pilih Slot</label>
                     <div id="slotsSelection">
                         <p>Sila pilih hari terlebih dahulu</p>
@@ -1166,8 +1278,17 @@ body {
         
         // Google Apps Script Configuration
         let SCRIPT_URL = '';
-        let USE_APPS_SCRIPT = false;
+        let USE_APPS_SCRIPT = true; // Default to Google Apps Script
         let ramadanDays = [];
+        let IS_ONLINE = false;
+        
+        // Admin Configuration
+        let IS_ADMIN_LOGGED_IN = false;
+        let ADMIN_USERNAME = '';
+        const ADMIN_CREDENTIALS = {
+            username: 'admin',
+            password: 'admin123' // Default credentials, should be changed in production
+        };
         
         // Initialize data structure
         function initializeData() {
@@ -1183,16 +1304,148 @@ body {
             }
         }
         
+        // Update connection status
+        function updateConnectionStatus(isOnline) {
+            IS_ONLINE = isOnline;
+            const indicator = document.getElementById('connectionIndicator');
+            const text = document.getElementById('connectionText');
+            
+            if (isOnline) {
+                indicator.className = 'connection-indicator connection-online';
+                text.textContent = 'Dalam talian';
+            } else {
+                indicator.className = 'connection-indicator connection-offline';
+                text.textContent = 'Luar talian';
+            }
+        }
+        
+        // Test connection to Google Apps Script
+        async function testConnection() {
+            if (!SCRIPT_URL) {
+                updateConnectionStatus(false);
+                return false;
+            }
+            
+            try {
+                const callbackName = 'jsonpCallback_' + Date.now();
+                const url = `${SCRIPT_URL}?action=testConnection&callback=${callbackName}`;
+                
+                const script = document.createElement('script');
+                script.src = url;
+                
+                return new Promise((resolve) => {
+                    const timeout = setTimeout(() => {
+                        updateConnectionStatus(false);
+                        resolve(false);
+                    }, 5000);
+                    
+                    window[callbackName] = function(data) {
+                        clearTimeout(timeout);
+                        delete window[callbackName];
+                        document.body.removeChild(script);
+                        
+                        if (data.status === 'success') {
+                            updateConnectionStatus(true);
+                            resolve(true);
+                        } else {
+                            updateConnectionStatus(false);
+                            resolve(false);
+                        }
+                    };
+                    
+                    document.body.appendChild(script);
+                });
+            } catch (error) {
+                updateConnectionStatus(false);
+                return false;
+            }
+        }
+        
         // Update data source status
         function updateDataSourceStatus() {
             const statusElement = document.getElementById('dataSourceStatus');
             
             if (USE_APPS_SCRIPT) {
-                statusElement.className = 'data-source-status apps-script';
-                statusElement.textContent = 'Menggunakan Google Apps Script - Data disimpan ke Google Apps Script';
+                if (IS_ONLINE) {
+                    statusElement.className = 'data-source-status apps-script';
+                    statusElement.textContent = 'Menggunakan Google Apps Script - Data disimpan ke Google Apps Script';
+                } else {
+                    statusElement.className = 'data-source-status local-storage';
+                    statusElement.textContent = 'Menggunakan Local Storage (Google Apps Script tidak tersedia) - Data disimpan secara tempatan';
+                }
             } else {
                 statusElement.className = 'data-source-status local-storage';
                 statusElement.textContent = 'Menggunakan Local Storage - Data disimpan secara tempatan';
+            }
+        }
+        
+        // Admin Login Functions
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.add('active');
+            document.getElementById('adminUsername').value = '';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('loginError').classList.remove('show');
+        }
+        
+        function hideLoginModal() {
+            document.getElementById('loginModal').classList.remove('active');
+        }
+        
+        function showLoginError(message) {
+            const errorElement = document.getElementById('loginError');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
+        
+        function hideLoginError() {
+            document.getElementById('loginError').classList.remove('show');
+        }
+        
+        function adminLogin() {
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value.trim();
+            
+            if (!username || !password) {
+                showLoginError('Sila masukkan nama pengguna dan katalaluan');
+                return;
+            }
+            
+            if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+                IS_ADMIN_LOGGED_IN = true;
+                ADMIN_USERNAME = username;
+                hideLoginModal();
+                updateAdminUI();
+                showNotification('Log masuk admin berjaya');
+                
+                // Show admin panel
+                document.getElementById('adminPanel').classList.add('active');
+            } else {
+                showLoginError('Nama pengguna atau katalaluan salah');
+            }
+        }
+        
+        function adminLogout() {
+            IS_ADMIN_LOGGED_IN = false;
+            ADMIN_USERNAME = '';
+            updateAdminUI();
+            showNotification('Log keluar admin berjaya');
+            
+            // Hide admin panel
+            document.getElementById('adminPanel').classList.remove('active');
+        }
+        
+        function updateAdminUI() {
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+            const adminStatus = document.getElementById('adminStatus');
+            const adminUsernameDisplay = document.getElementById('adminUsernameDisplay');
+            
+            if (IS_ADMIN_LOGGED_IN) {
+                adminLoginBtn.style.display = 'none';
+                adminStatus.style.display = 'flex';
+                adminUsernameDisplay.textContent = `Admin: ${ADMIN_USERNAME}`;
+            } else {
+                adminLoginBtn.style.display = 'block';
+                adminStatus.style.display = 'none';
             }
         }
         
@@ -1206,6 +1459,14 @@ body {
             showLoading(true);
             
             try {
+                // Test connection first
+                const isConnected = await testConnection();
+                if (!isConnected) {
+                    showSetupError('Tidak dapat menyambung ke Google Apps Script. Menggunakan data tempatan.');
+                    showLoading(false);
+                    return false;
+                }
+                
                 // Buat URL dengan callback JSONP
                 const callbackName = 'jsonpCallback_' + Date.now();
                 const url = `${SCRIPT_URL}?action=getData&callback=${callbackName}`;
@@ -1214,6 +1475,7 @@ body {
                 const script = document.createElement('script');
                 script.src = url;
                 script.onerror = () => {
+                    updateConnectionStatus(false);
                     showSetupError('Gagal memuatkan skrip dari Google Apps Script. Sila semak URL dan sambungan internet.');
                     showLoading(false);
                 };
@@ -1248,6 +1510,9 @@ body {
                         generateDayCards(4);
                         generateDayOptions();
                         showSetupSuccess('Google Apps Script telah disambungkan dengan jayanya');
+                        
+                        // Save to localStorage as backup
+                        saveDataToLocalStorage();
                     } else {
                         showSetupError(data.message || 'Ralat tidak diketahui dari Apps Script');
                     }
@@ -1262,6 +1527,7 @@ body {
                     if (window[callbackName]) {
                         delete window[callbackName];
                         document.body.removeChild(script);
+                        updateConnectionStatus(false);
                         showSetupError('Timeout semasa memuatkan data. Sila cuba lagi.');
                         showLoading(false);
                     }
@@ -1270,6 +1536,7 @@ body {
                 return true;
             } catch (error) {
                 console.error('Error loading data from Google Apps Script:', error);
+                updateConnectionStatus(false);
                 showSetupError('Ralat semasa memuatkan data: ' + error.message);
                 showLoading(false);
                 return false;
@@ -1297,8 +1564,8 @@ body {
         
         // Save data to Google Apps Script
         async function saveDataToAppsScript() {
-            if (!SCRIPT_URL) {
-                showNotification('Sila setup Google Apps Script terlebih dahulu');
+            if (!SCRIPT_URL || !IS_ONLINE) {
+                showNotification('Google Apps Script tidak tersedia. Data disimpan secara tempatan.');
                 return false;
             }
             
@@ -1312,6 +1579,7 @@ body {
                 const script = document.createElement('script');
                 script.src = url;
                 script.onerror = () => {
+                    updateConnectionStatus(false);
                     showNotification('Gagal menyimpan. Data disimpan secara tempatan.');
                     saveDataToLocalStorage();
                     showLoading(false);
@@ -1323,7 +1591,10 @@ body {
 
                     if (result.status === 'success') {
                         showNotification('Data telah disimpan ke Google Apps Script');
+                        // Also save to localStorage as backup
+                        saveDataToLocalStorage();
                     } else {
+                        updateConnectionStatus(false);
                         showNotification(`Gagal menyimpan: ${result.message || 'Ralat tidak diketahui'}. Data disimpan secara tempatan.`);
                         saveDataToLocalStorage();
                     }
@@ -1336,6 +1607,7 @@ body {
                     if (window[callbackName]) {
                         delete window[callbackName];
                         document.body.removeChild(script);
+                        updateConnectionStatus(false);
                         showNotification('Timeout semasa menyimpan. Data disimpan secara tempatan.');
                         saveDataToLocalStorage();
                         showLoading(false);
@@ -1345,6 +1617,7 @@ body {
                 return true;
             } catch (error) {
                 console.error('Error saving data to Google Apps Script:', error);
+                updateConnectionStatus(false);
                 showNotification('Gagal menyimpan data: ' + error.message + '. Data disimpan secara tempatan.');
                 saveDataToLocalStorage();
                 showLoading(false);
@@ -1366,7 +1639,7 @@ body {
         
         // Save donor information to Google Apps Script
         async function saveDonorToAppsScript(donorName, donorPhone, day, slots) {
-            if (!SCRIPT_URL) return false;
+            if (!SCRIPT_URL || !IS_ONLINE) return false;
             
             try {
                 const callbackName = 'jsonpCallback_' + Date.now();
@@ -1537,9 +1810,16 @@ body {
         }
         
         // Show notification
-        function showNotification(message) {
+        function showNotification(message, isError = false) {
             const notification = document.getElementById('notification');
             notification.textContent = message;
+            
+            if (isError) {
+                notification.classList.add('error');
+            } else {
+                notification.classList.remove('error');
+            }
+            
             notification.classList.add('show');
             
             setTimeout(() => {
@@ -1612,14 +1892,14 @@ body {
             const selectedSlots = document.querySelectorAll('#slotsSelection .slot.selected');
             
             if (!donorName || !donorPhone || !selectedDay || selectedSlots.length === 0) {
-                showNotification('Sila lengkapkan semua maklumat dan pilih sekurang-kurangnya satu slot');
+                showNotification('Sila lengkapkan semua maklumat dan pilih sekurang-kurangnya satu slot', true);
                 return;
             }
             
             const dayData = ramadanDays.find(d => d.day === parseInt(selectedDay));
             
             if (!dayData) {
-                showNotification('Ralat: Hari tidak ditemui');
+                showNotification('Ralat: Hari tidak ditemui', true);
                 return;
             }
             
@@ -1636,12 +1916,12 @@ body {
             dayData.donorName = donorName;
             dayData.donorPhone = donorPhone;
             
-            // Save data to localStorage first (always)
+            // Always save to localStorage first
             saveDataToLocalStorage();
             
-            // Try to save to Google Apps Script if enabled
+            // Try to save to Google Apps Script if online
             let savedToAppsScript = false;
-            if (USE_APPS_SCRIPT) {
+            if (USE_APPS_SCRIPT && IS_ONLINE) {
                 savedToAppsScript = await saveDataToAppsScript();
                 if (savedToAppsScript) {
                     await saveDonorToAppsScript(donorName, donorPhone, selectedDay, selectedSlotIndices);
@@ -1663,7 +1943,7 @@ body {
             // Show notification
             let notificationMessage = `Terima kasih ${donorName} atas tempahan RM${selectedSlots.length * SLOT_PRICE}!`;
             
-            if (USE_APPS_SCRIPT) {
+            if (USE_APPS_SCRIPT && IS_ONLINE) {
                 if (!savedToAppsScript) {
                     notificationMessage += ' (Data disimpan secara tempatan kerana masalah dengan Google Apps Script)';
                 } else {
@@ -1681,7 +1961,14 @@ body {
             let loaded = false;
             
             if (USE_APPS_SCRIPT) {
-                loaded = await loadDataFromAppsScript();
+                // Test connection first
+                const isConnected = await testConnection();
+                if (isConnected) {
+                    loaded = await loadDataFromAppsScript();
+                } else {
+                    showNotification('Tidak dapat menyambung ke Google Apps Script. Menggunakan data tempatan.', true);
+                    loaded = loadDataFromLocalStorage();
+                }
             } else {
                 loaded = loadDataFromLocalStorage();
             }
@@ -1719,8 +2006,8 @@ body {
                 // Always save to localStorage
                 saveDataToLocalStorage();
                 
-                // Try to save to Google Apps Script if enabled
-                if (USE_APPS_SCRIPT) {
+                // Try to save to Google Apps Script if online
+                if (USE_APPS_SCRIPT && IS_ONLINE) {
                     await saveDataToAppsScript();
                 }
                 
@@ -1731,7 +2018,7 @@ body {
                 generateDayCards(4);
                 
                 let notificationMessage = 'Semua data telah direset';
-                if (USE_APPS_SCRIPT) {
+                if (USE_APPS_SCRIPT && IS_ONLINE) {
                     notificationMessage += ' (Data disimpan ke Google Apps Script dan secara tempatan)';
                 } else {
                     notificationMessage += ' (Data disimpan secara tempatan)';
@@ -1755,71 +2042,22 @@ body {
             
             hideSetupModal();
             
-            // Try to load data
-            const loaded = await loadDataFromAppsScript();
-            if (loaded) {
-                updateMainProgressBar();
-                generateDayCards(1);
-                generateDayCards(2);
-                generateDayCards(3);
-                generateDayCards(4);
-                generateDayOptions();
-                showSetupSuccess('Google Apps Script telah disambungkan dengan jayanya');
-            }
-        }
-        
-        // Switch data source
-        function switchDataSource(useAppsScript) {
-            USE_APPS_SCRIPT = useAppsScript;
-            localStorage.setItem('useAppsScript', useAppsScript);
-            
-            // Update UI
-            document.getElementById('localStorageOption').classList.toggle('active', !useAppsScript);
-            document.getElementById('appsScriptOption').classList.toggle('active', useAppsScript);
-            
-            // Update data source status
-            updateDataSourceStatus();
-            
-            // Reload data
-            refreshData();
-        }
-        
-        // Use localStorage only
-        function useLocalStorageOnly() {
-            USE_APPS_SCRIPT = false;
-            localStorage.setItem('useAppsScript', false);
-            
-            // Update UI
-            document.getElementById('localStorageOption').classList.add('active');
-            document.getElementById('appsScriptOption').classList.remove('active');
-            
-            // Update data source status
-            updateDataSourceStatus();
-            
-            // Hide setup modal
-            hideSetupModal();
-            
-            // Load data from localStorage
-            const loaded = loadDataFromLocalStorage();
-            
-            if (loaded) {
-                updateMainProgressBar();
-                generateDayCards(1);
-                generateDayCards(2);
-                generateDayCards(3);
-                generateDayCards(4);
-                generateDayOptions();
-                showNotification('Menggunakan Local Storage. Data disimpan secara tempatan.');
+            // Test connection
+            const isConnected = await testConnection();
+            if (isConnected) {
+                // Try to load data
+                const loaded = await loadDataFromAppsScript();
+                if (loaded) {
+                    updateMainProgressBar();
+                    generateDayCards(1);
+                    generateDayCards(2);
+                    generateDayCards(3);
+                    generateDayCards(4);
+                    generateDayOptions();
+                    showSetupSuccess('Google Apps Script telah disambungkan dengan jayanya');
+                }
             } else {
-                // Initialize with empty data
-                initializeData();
-                updateMainProgressBar();
-                generateDayCards(1);
-                generateDayCards(2);
-                generateDayCards(3);
-                generateDayCards(4);
-                generateDayOptions();
-                showNotification('Menggunakan Local Storage. Data disimpan secara tempatan.');
+                showSetupError('Tidak dapat menyambung ke Google Apps Script. Sila semak URL dan cuba lagi.');
             }
         }
         
@@ -1827,7 +2065,7 @@ body {
         async function init() {
             // Load settings from localStorage
             const savedUrl = localStorage.getItem('scriptUrl');
-            const savedUseAppsScript = localStorage.getItem('useAppsScript') === 'true';
+            const savedUseAppsScript = localStorage.getItem('useAppsScript') !== 'false'; // Default to true
             
             if (savedUrl) {
                 SCRIPT_URL = savedUrl;
@@ -1836,16 +2074,18 @@ body {
             
             USE_APPS_SCRIPT = savedUseAppsScript;
             
-            document.getElementById('localStorageOption').classList.toggle('active', !savedUseAppsScript);
-            document.getElementById('appsScriptOption').classList.toggle('active', savedUseAppsScript);
-            
             // Update data source status
             updateDataSourceStatus();
+            
+            // Test connection if using Google Apps Script
+            if (USE_APPS_SCRIPT && SCRIPT_URL) {
+                await testConnection();
+            }
             
             // Load data
             let loaded = false;
             
-            if (USE_APPS_SCRIPT) {
+            if (USE_APPS_SCRIPT && IS_ONLINE) {
                 loaded = await loadDataFromAppsScript();
             } else {
                 loaded = loadDataFromLocalStorage();
@@ -1869,7 +2109,7 @@ body {
                 generateDayCards(4);
                 generateDayOptions();
                 
-                if (USE_APPS_SCRIPT) {
+                if (USE_APPS_SCRIPT && SCRIPT_URL) {
                     showSetupModal();
                 }
             }
@@ -1910,19 +2150,15 @@ body {
             document.getElementById('resetDataBtn').addEventListener('click', resetData);
             document.getElementById('setupScriptBtn').addEventListener('click', showSetupModal);
             
-            // Data source toggle
-            document.getElementById('localStorageOption').addEventListener('click', () => {
-                switchDataSource(false);
-            });
-            
-            document.getElementById('appsScriptOption').addEventListener('click', () => {
-                switchDataSource(true);
-            });
+            // Admin login
+            document.getElementById('adminLoginBtn').addEventListener('click', showLoginModal);
+            document.getElementById('closeLoginModal').addEventListener('click', hideLoginModal);
+            document.getElementById('loginBtn').addEventListener('click', adminLogin);
+            document.getElementById('adminLogoutBtn').addEventListener('click', adminLogout);
             
             // Setup modal
             document.getElementById('closeSetupModal').addEventListener('click', hideSetupModal);
             document.getElementById('saveScriptUrl').addEventListener('click', saveScriptUrl);
-            document.getElementById('useLocalStorageBtn').addEventListener('click', useLocalStorageOnly);
             
             // Close modal when clicking outside
             window.addEventListener('click', (e) => {
@@ -1932,7 +2168,25 @@ body {
                 if (e.target === document.getElementById('setupModal')) {
                     hideSetupModal();
                 }
+                if (e.target === document.getElementById('loginModal')) {
+                    hideLoginModal();
+                }
             });
+            
+            // Handle Enter key in login form
+            document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    adminLogin();
+                }
+            });
+            
+            // Periodic connection check
+            setInterval(async () => {
+                if (USE_APPS_SCRIPT && SCRIPT_URL) {
+                    await testConnection();
+                    updateDataSourceStatus();
+                }
+            }, 30000); // Check every 30 seconds
         }
         
         // Run the application when DOM is fully loaded
