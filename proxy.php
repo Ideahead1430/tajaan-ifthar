@@ -1,6 +1,6 @@
 <?php
 // URL Google Apps Script anda
- $appsScriptUrl = 'https://script.google.com/macros/s/AKfycbzWHnWnT1WDqvLr5_Xj_flcRBOpB65urd7vHmztEA87W6IH0w02E9rOhlbr8UdsG3qE/exec';
+ $appsScriptUrl = 'https://script.google.com/macros/s/AKfycbzxzxnyAMsDBytHylc6TUljdGBaLEUgDbgaeioBVkzUQgEa0PZBQCxzl2Z2UYOWpy1H/exec';
 
 // Dapatkan parameter dari panggilan JavaScript
  $queryString = $_SERVER['QUERY_STRING'];
