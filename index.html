@@ -1128,8 +1128,8 @@ body {
         const DAILY_TARGET = SLOTS_PER_DAY * SLOT_PRICE;
         const TOTAL_TARGET = DAILY_TARGET * TOTAL_DAYS;
         
-        // Google Apps Script Configuration - Hardcoded URL
-        const SCRIPT_URL = 'proxy.php'; // PASTIKAN INI ADALAH URL YANG BARU
+        // Google Apps Script Configuration - GUNAKAN URL YANG TERBARU
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxzxnyAMsDBytHylc6TUljdGBaLEUgDbgaeioBVkzUQgEa0PZBQCxzl2Z2UYOWpy1H/exec';
         const USE_APPS_SCRIPT = true;
         let ramadanDays = [];
         let IS_ONLINE = false;
@@ -1177,57 +1177,50 @@ body {
             }
         }
 
-        // --- HYBRID FETCH/JSONP FUNCTIONS ---
+        // --- JSONP-ONLY FUNCTIONS (WITH FIX) ---
 
-        // Fallback JSONP function
-        function makeJSONPRequest(url, action, data = {}) {
+        // Universal JSONP request function
+        function makeJSONPRequest(action, data = {}) {
             return new Promise((resolve) => {
                 const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 const script = document.createElement('script');
-                script.src = `${url}?action=${action}&callback=${callbackName}&${new URLSearchParams(data).toString()}`;
+                
+                // Build URL with parameters
+                // PEMBAIKAN: Guna 'callbackName' bukan 'callback'
+                const params = new URLSearchParams({ action, callback: callbackName, ...data });
+                script.src = `${SCRIPT_URL}?${params.toString()}`;
                 script.async = true;
                 
+                // Set up the callback function
                 window[callbackName] = (response) => {
-                    try {
-                        document.head.removeChild(script);
-                        delete window[callbackName];
-                        resolve(response);
-                    } catch (e) {
-                        console.error("JSONP cleanup error:", e);
-                    }
+                    // Clean up
+                    try { document.head.removeChild(script); } catch (e) {}
+                    delete window[callbackName];
+                    resolve(response);
                 };
                 
+                // Handle script loading errors
                 script.onerror = () => {
-                    console.error("JSONP script error");
-                    document.head.removeChild(script);
+                    console.error("JSONP script error for action:", action);
+                    try { document.head.removeChild(script); } catch (e) {}
                     delete window[callbackName];
                     resolve({ status: 'error', message: 'JSONP request failed' });
                 };
                 
+                // Add to page to start the request
                 document.head.appendChild(script);
             });
         }
 
-        // Test connection with fetch and JSONP fallback
+        // Test connection using JSONP
         async function testConnection(retryCount = RETRY_COUNT) {
             if (!SCRIPT_URL) { updateConnectionStatus(false); return false; }
             
-            // Try modern fetch first
             try {
-                const response = await fetch(`${SCRIPT_URL}?action=testConnection`, { method: 'GET' });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
+                const data = await makeJSONPRequest('testConnection');
                 if (data.status === 'success') { updateConnectionStatus(true); return true; }
-            } catch (fetchError) {
-                console.warn('Fetch failed, falling back to JSONP:', fetchError.message);
-            }
-
-            // Fallback to JSONP
-            try {
-                const data = await makeJSONPRequest(SCRIPT_URL, 'testConnection');
-                if (data.status === 'success') { updateConnectionStatus(true); return true; }
-            } catch (jsonpError) {
-                console.error('JSONP also failed:', jsonpError);
+            } catch (error) {
+                console.error('Connection test failed:', error);
             }
 
             updateConnectionStatus(false);
@@ -1239,34 +1232,20 @@ body {
             return false;
         }
         
-        // Load data with fetch and JSONP fallback
+        // Load data using JSONP
         async function loadDataFromAppsScript() {
             if (!SCRIPT_URL) { showNotification('URL Google Apps Script tidak ditetapkan', true); return false; }
             showLoading(true); updateSyncStatus('pending');
             
-            // Try modern fetch first
             try {
-                const response = await fetch(`${SCRIPT_URL}?action=getData`, { method: 'GET' });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const result = await response.json();
-                if (result.status === 'success' && result.data) {
-                    processDataFromServer(result);
-                    return true;
-                }
-            } catch (fetchError) {
-                console.warn('Fetch failed, falling back to JSONP:', fetchError.message);
-            }
-
-            // Fallback to JSONP
-            try {
-                const result = await makeJSONPRequest(SCRIPT_URL, 'getData');
+                const result = await makeJSONPRequest('getData');
                 if (result.status === 'success' && result.data) {
                     processDataFromServer(result);
                     return true;
                 }
                 throw new Error(result.message || 'Data tidak dapat dimuatkan');
             } catch (error) {
-                console.error('All loading methods failed:', error);
+                console.error('Loading data failed:', error);
                 updateConnectionStatus(false); updateSyncStatus('error');
                 showNotification('Gagal memuatkan data: ' + error.message, true);
                 showLoading(false);
@@ -1290,33 +1269,19 @@ body {
             showLoading(false);
         }
         
-        // Save data with fetch and JSONP fallback
+        // Save data using JSONP
         async function saveDataToAppsScript(retryCount = RETRY_COUNT) {
             if (!SCRIPT_URL || !IS_ONLINE) { showNotification('Google Apps Script tidak tersedia. Data disimpan secara tempatan.'); return false; }
             showLoading(true); updateSyncStatus('pending');
             
             const saveData = { data: JSON.stringify(ramadanDays) };
 
-            // Try modern fetch first
             try {
-                const response = await fetch(`${SCRIPT_URL}?action=saveData`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams(saveData)
-                });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const result = await response.json();
-                if (result.status === 'success') { handleSaveSuccess(); return true; }
-            } catch (fetchError) {
-                console.warn('Fetch failed, falling back to JSONP:', fetchError.message);
-            }
-
-            // Fallback to JSONP
-            try {
-                const result = await makeJSONPRequest(SCRIPT_URL, 'saveData', saveData);
+                const result = await makeJSONPRequest('saveData', saveData);
                 if (result.status === 'success') { handleSaveSuccess(); return true; }
                 throw new Error(result.message || 'Data tidak dapat disimpan');
             } catch (error) {
-                console.error('All save methods failed:', error);
+                console.error('Saving data failed:', error);
                 updateConnectionStatus(false); updateSyncStatus('error');
                 if (retryCount > 0) {
                     console.log(`Retrying save... (${retryCount} attempts left)`);
@@ -1337,19 +1302,19 @@ body {
             updateSyncStatus('success'); showLoading(false);
         }
         
-        // Save donor information (POST requests often fail with fetch, use JSONP directly for reliability)
+        // Save donor information using JSONP
         async function saveDonorToAppsScript(donorName, donorPhone, day, slots) {
             if (!SCRIPT_URL || !IS_ONLINE) return false;
             const donorData = { name: donorName, phone: donorPhone, day: day, slots: slots, amount: slots.length * SLOT_PRICE, date: new Date().toISOString() };
             try {
-                await makeJSONPRequest(SCRIPT_URL, 'saveDonor', { donorData: JSON.stringify(donorData) });
+                await makeJSONPRequest('saveDonor', { donorData: JSON.stringify(donorData) });
                 return true;
             } catch (error) { console.error('Error saving donor data:', error); return false; }
         }
         
-        // --- END OF HYBRID FUNCTIONS ---
+        // --- END OF JSONP-ONLY FUNCTIONS ---
 
-        // --- ALL OTHER HELPER FUNCTIONS ---
+        // --- ALL OTHER HELPER FUNCTIONS (Sama seperti sebelumnya) ---
 
         function updateDataSourceStatus() {
             const statusElement = document.getElementById('dataSourceStatus');
@@ -1577,4 +1542,5 @@ body {
 </script>
 </body>
 </html>
+
 
