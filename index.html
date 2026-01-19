@@ -1,11 +1,11 @@
-
-
 <!DOCTYPE html>
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tempahan Iftar, Sahur & Moreh Pelajar Tahfiz</title>
+    <!-- Added to prevent favicon 404 error -->
+    <link rel="icon" href="data:image/x-icon;base64,">
     <style>
         /* Gaya Asas & Variabel */
         :root {
@@ -1129,7 +1129,7 @@ body {
         const TOTAL_TARGET = DAILY_TARGET * TOTAL_DAYS;
         
         // Google Apps Script Configuration - Hardcoded URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPxKK16r6hrJfgpjTbebITsICtSehoZNVx13VOrvuPGtkXtDFEdt5IeqwOrp3R6-4m/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLUdbsR48uwOQEWnmZAbzhjX8cNZWfLvPoTLNUjd15NhwhFiDcjhPJYFrBaVjc0XW1/exec';
         const USE_APPS_SCRIPT = true; // Always use Google Apps Script
         let ramadanDays = [];
         let IS_ONLINE = false;
@@ -1199,381 +1199,221 @@ body {
             }
         }
         
-        // Create a CORS-safe fetch wrapper
-        async function fetchWithRetry(url, options = {}, retryCount = RETRY_COUNT) {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                const response = await fetch(url, {
-                    ...options,
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                return response;
-            } catch (error) {
-                if (error.name === 'AbortError') {
-                    throw new Error('Request timeout');
-                }
-                
-                if (retryCount > 0) {
-                    console.log(`Request failed, retrying... (${retryCount} attempts left)`);
-                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-                    return fetchWithRetry(url, options, retryCount - 1);
-                } else {
-                    throw error;
-                }
-            }
-        }
+        // MODERN & STABLE FUNCTIONS USING FETCH API
         
-        // Create a JSONP request using iframe (alternative to script tag)
-        function makeJSONPRequest(url, data) {
-            return new Promise((resolve, reject) => {
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.name = 'jsonp-iframe';
-                
-                const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                
-                // Set up the callback function
-                window[callbackName] = function(response) {
-                    try {
-                        // Clean up
-                        delete window[callbackName];
-                        document.body.removeChild(iframe);
-                        
-                        resolve(JSON.parse(response));
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                
-                // Create the form data
-                const formData = new FormData();
-                for (const key in data) {
-                    formData.append(key, data[key]);
-                }
-                
-                // Set the iframe source with the form data
-                iframe.src = url;
-                
-                // Handle load event
-                iframe.onload = () => {
-                    // Wait a bit for the content to load
-                    setTimeout(() => {
-                        try {
-                            const content = iframe.contentWindow.document.body.textContent;
-                            if (content) {
-                                window[callbackName](content);
-                            } else {
-                                reject(new Error('No content received'));
-                            }
-                        } catch (error) {
-                            reject(error);
-                        }
-                    }, 100);
-                };
-                
-                iframe.onerror = () => {
-                    reject(new Error('Failed to load iframe'));
-                };
-                
-                document.body.appendChild(iframe);
-                
-                // Submit the form
-                setTimeout(() => {
-                    try {
-                        iframe.contentWindow.document.body.innerHTML = `
-                            <form id="jsonp-form" method="POST">
-                                ${Object.keys(data).map(key => 
-                                    `<input type="hidden" name="${key}" value="${data[key]}">`
-                                ).join('')}
-                            </form>
-                        `;
-                        iframe.contentWindow.document.getElementById('jsonp-form').submit();
-                    } catch (error) {
-                        reject(error);
-                    }
-                }, 100);
-            });
-        }
-        
-        // Test connection to Google Apps Script with multiple fallback methods
+        // Test connection using modern fetch
         async function testConnection(retryCount = RETRY_COUNT) {
             if (!SCRIPT_URL) {
                 updateConnectionStatus(false);
                 return false;
             }
             
+            const testUrl = `${SCRIPT_URL}?action=testConnection`;
+            
             try {
-                // Method 1: Try JSONP with script tag (original method)
-                const scriptSuccess = await testConnectionWithScript(retryCount);
-                if (scriptSuccess) {
-                    return true;
-                }
-                
-                // Method 2: Try iframe method (alternative)
-                const iframeSuccess = await testConnectionWithIframe(retryCount);
-                if (iframeSuccess) {
-                    return true;
-                }
-                
-                // Method 3: Try CORS fetch with retry
-                const fetchSuccess = await testConnectionWithFetch(retryCount);
-                if (fetchSuccess) {
-                    return true;
-                }
-                
-                updateConnectionStatus(false);
-                return false;
-            } catch (error) {
-                console.error('Error in testConnection:', error);
-                updateConnectionStatus(false);
-                return false;
-            }
-        }
-        
-    // Test connection using script tag
-async function testConnectionWithScript(retryCount = RETRY_COUNT) {
-    const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    const url = `${SCRIPT_URL}?action=testConnection&callback=${callbackName}`;
-    
-    return new Promise((resolve) => {
-        const timeout = setTimeout(() => {
-            // Cleanup on timeout
-            try { document.head.removeChild(script); } catch (e) {}
-            delete window[callbackName];
-            if (retryCount > 0) {
-                console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                setTimeout(() => {
-                    testConnectionWithScript(retryCount - 1).then(resolve);
-                }, RETRY_DELAY);
-            } else {
-                updateConnectionStatus(false);
-                resolve(false);
-            }
-        }, 5000);
-        
-        const script = document.createElement('script');
-        script.src = url;
-        script.async = true;
-        
-        script.onload = () => {
-            clearTimeout(timeout);
-        };
-        
-        script.onerror = () => {
-            // Cleanup on error
-            try { document.head.removeChild(script); } catch (e) {}
-            delete window[callbackName];
-            if (retryCount > 0) {
-                console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                setTimeout(() => {
-                    testConnectionWithScript(retryCount - 1).then(resolve);
-                }, RETRY_DELAY);
-            } else {
-                updateConnectionStatus(false);
-                resolve(false);
-            }
-        };
-        
-        window[callbackName] = function(data) {
-            clearTimeout(timeout);
-            try {
-                document.head.removeChild(script); // BETULAN: Gunakan document.head
-            } catch (error) {
-                console.warn('Could not remove script tag:', error);
-            }
-            delete window[callbackName];
-            
-            if (data && data.status === 'success') {
-                updateConnectionStatus(true);
-                resolve(true);
-            } else {
-                if (retryCount > 0) {
-                    console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                    setTimeout(() => {
-                        testConnectionWithScript(retryCount - 1).then(resolve);
-                    }, RETRY_DELAY);
-                } else {
-                    updateConnectionStatus(false);
-                    resolve(false);
-                }
-            }
-        };
-        
-        document.head.appendChild(script); // Elemen ditambah di sini
-    });
-}
-        
-        // Test connection using iframe
-        async function testConnectionWithIframe(retryCount = RETRY_COUNT) {
-            const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            const url = `${SCRIPT_URL}?action=testConnection&callback=${callbackName}`;
-            
-            return new Promise((resolve) => {
-                const timeout = setTimeout(() => {
-                    if (retryCount > 0) {
-                        console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                        setTimeout(() => {
-                            testConnectionWithIframe(retryCount - 1).then(resolve);
-                        }, RETRY_DELAY);
-                    } else {
-                        updateConnectionStatus(false);
-                        resolve(false);
-                    }
-                }, 5000);
-                
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.name = 'jsonp-iframe';
-                
-                window[callbackName] = function(response) {
-                    try {
-                        // Clean up
-                        delete window[callbackName];
-                        document.body.removeChild(iframe);
-                        
-                        const data = JSON.parse(response);
-                        
-                        if (data && data.status === 'success') {
-                            updateConnectionStatus(true);
-                            resolve(true);
-                        } else {
-                            if (retryCount > 0) {
-                                console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                                setTimeout(() => {
-                                    testConnectionWithIframe(retryCount - 1).then(resolve);
-                                }, RETRY_DELAY);
-                            } else {
-                                updateConnectionStatus(false);
-                                resolve(false);
-                            }
-                        }
-                    } catch (error) {
-                        if (retryCount > 0) {
-                            console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                            setTimeout(() => {
-                                testConnectionWithIframe(retryCount - 1).then(resolve);
-                            }, RETRY_DELAY);
-                        } else {
-                            updateConnectionStatus(false);
-                            resolve(false);
-                        }
-                    }
-                };
-                
-                iframe.onload = () => {
-                    // Wait a bit for the content to load
-                    setTimeout(() => {
-                        try {
-                            const content = iframe.contentWindow.document.body.textContent;
-                            if (content) {
-                                window[callbackName](content);
-                            } else {
-                                reject(new Error('No content received'));
-                            }
-                        } catch (error) {
-                            reject(error);
-                        }
-                    }, 100);
-                };
-                
-                iframe.onerror = () => {
-                    if (retryCount > 0) {
-                        console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                        setTimeout(() => {
-                            testConnectionWithIframe(retryCount - 1).then(resolve);
-                        }, RETRY_DELAY);
-                    } else {
-                        updateConnectionStatus(false);
-                        resolve(false);
-                    }
-                };
-                
-                document.body.appendChild(iframe);
-                
-                // Submit the form
-                setTimeout(() => {
-                    try {
-                        iframe.contentWindow.document.body.innerHTML = `
-                            <form id="jsonp-form" method="POST">
-                                <input type="hidden" name="action" value="testConnection">
-                            </form>
-                        `;
-                        iframe.contentWindow.document.getElementById('jsonp-form').submit();
-                    } catch (error) {
-                        reject(error);
-                    }
-                }, 100);
-            });
-        }
-        
-        // Test connection using CORS fetch
-        async function testConnectionWithFetch(retryCount = RETRY_COUNT) {
-            const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            const url = `${SCRIPT_URL}?action=testConnection&callback=${callbackName}`;
-            
-            return new Promise((resolve) => {
-                const timeout = setTimeout(() => {
-                    if (retryCount > 0) {
-                        console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                        setTimeout(() => {
-                            testConnectionWithFetch(retryCount - 1).then(resolve);
-                        }, RETRY_DELAY);
-                    } else {
-                        updateConnectionStatus(false);
-                        resolve(false);
-                    }
-                }, 5000);
-                
-                fetch(url, {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+                const response = await fetch(testUrl, {
                     method: 'GET',
-                    mode: 'no-cors',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    clearTimeout(timeout);
-                    
-                    if (data && data.status === 'success') {
-                        updateConnectionStatus(true);
-                        resolve(true);
-                    } else {
-                        if (retryCount > 0) {
-                            console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                            setTimeout(() => {
-                                testConnectionWithFetch(retryCount - 1).then(resolve);
-                            }, RETRY_DELAY);
-                        } else {
-                            updateConnectionStatus(false);
-                            resolve(false);
-                        }
-                    }
-                })
-                .catch(error => {
-                    if (retryCount > 0) {
-                        console.log(`Connection test failed, retrying... (${retryCount} attempts left)`);
-                        setTimeout(() => {
-                            testConnectionWithFetch(retryCount - 1).then(resolve);
-                        }, RETRY_DELAY);
-                    } else {
-                        updateConnectionStatus(false);
-                        resolve(false);
-                    }
+                    signal: controller.signal
                 });
-            });
+                
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    updateConnectionStatus(true);
+                    return true;
+                } else {
+                    throw new Error(data.message || 'Test connection returned an error');
+                }
+
+            } catch (error) {
+                console.error(`Connection test failed: ${error.message}`);
+                updateConnectionStatus(false);
+                
+                if (retryCount > 0) {
+                    console.log(`Retrying connection test... (${retryCount} attempts left)`);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                    return testConnection(retryCount - 1);
+                }
+                
+                return false;
+            }
         }
         
+        // Load data from Google Apps Script using modern fetch
+        async function loadDataFromAppsScript() {
+            if (!SCRIPT_URL) {
+                showNotification('URL Google Apps Script tidak ditetapkan', true);
+                return false;
+            }
+            
+            showLoading(true);
+            updateSyncStatus('pending');
+            
+            const loadUrl = `${SCRIPT_URL}?action=getData`;
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
+                const response = await fetch(loadUrl, {
+                    method: 'GET',
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.data) {
+                    ramadanDays = result.data;
+                    // Fill in any missing days
+                    for (let i = 1; i <= TOTAL_DAYS; i++) {
+                        if (!ramadanDays.find(d => d.day === i)) {
+                            ramadanDays.push({
+                                day: i,
+                                slots: Array(SLOTS_PER_DAY).fill(false),
+                                donorName: '',
+                                donorPhone: '',
+                                collected: 0
+                            });
+                        }
+                    }
+                    ramadanDays.sort((a, b) => a.day - b.day);
+                    
+                    LAST_SYNC_TIME = Date.now();
+                    saveDataToLocalStorage();
+                    
+                    updateMainProgressBar();
+                    generateDayCards(1);
+                    generateDayCards(2);
+                    generateDayCards(3);
+                    generateDayCards(4);
+                    generateDayOptions();
+                    updateSyncStatus('success');
+                    
+                    showNotification('Data telah dimuatkan dari Google Apps Script');
+                    showLoading(false);
+                    return true;
+                } else {
+                    throw new Error(result.message || 'Ralat tidak diketahui dari Apps Script');
+                }
+
+            } catch (error) {
+                console.error('Error loading data from Google Apps Script:', error);
+                updateConnectionStatus(false);
+                updateSyncStatus('error');
+                showNotification('Gagal memuatkan data: ' + error.message, true);
+                showLoading(false);
+                return false;
+            }
+        }
+        
+        // Save data to Google Apps Script using modern fetch
+        async function saveDataToAppsScript(retryCount = RETRY_COUNT) {
+            if (!SCRIPT_URL || !IS_ONLINE) {
+                showNotification('Google Apps Script tidak tersedia. Data disimpan secara tempatan.');
+                return false;
+            }
+            
+            showLoading(true);
+            updateSyncStatus('pending');
+            
+            const saveUrl = `${SCRIPT_URL}?action=saveData`;
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+                const response = await fetch(saveUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ data: ramadanDays }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    LAST_SYNC_TIME = Date.now();
+                    saveDataToLocalStorage();
+                    showNotification('Data telah disimpan ke Google Apps Script');
+                    updateSyncStatus('success');
+                    showLoading(false);
+                    return true;
+                } else {
+                    throw new Error(result.message || 'Ralat tidak diketahui dari Apps Script');
+                }
+
+            } catch (error) {
+                console.error('Error saving data to Google Apps Script:', error);
+                updateConnectionStatus(false);
+                updateSyncStatus('error');
+                
+                if (retryCount > 0) {
+                    console.log(`Retrying save... (${retryCount} attempts left)`);
+                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                    return saveDataToAppsScript(retryCount - 1);
+                } else {
+                    showNotification('Gagal menyimpan: ' + error.message + '. Data disimpan secara tempatan.');
+                    saveDataToLocalStorage();
+                    showLoading(false);
+                    return false;
+                }
+            }
+        }
+        
+        // Save donor information to Google Apps Script using modern fetch
+        async function saveDonorToAppsScript(donorName, donorPhone, day, slots) {
+            if (!SCRIPT_URL || !IS_ONLINE) return false;
+            
+            const saveUrl = `${SCRIPT_URL}?action=saveDonor`;
+            const donorData = {
+                name: donorName, 
+                phone: donorPhone, 
+                day: day, 
+                slots: slots,
+                amount: slots.length * SLOT_PRICE, 
+                date: new Date().toISOString()
+            };
+            
+            try {
+                await fetch(saveUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ donorData: donorData })
+                });
+                return true;
+            } catch (error) {
+                console.error('Error saving donor data:', error);
+                return false;
+            }
+        }
+        
+        // END OF MODERN FUNCTIONS
+
         // Update data source status
         function updateDataSourceStatus() {
             const statusElement = document.getElementById('dataSourceStatus');
@@ -1662,137 +1502,6 @@ async function testConnectionWithScript(retryCount = RETRY_COUNT) {
             }
         }
         
-// Ganti fungsi loadDataFromAppsScript dengan yang ini
-async function loadDataFromAppsScript() {
-    if (!SCRIPT_URL) {
-        showNotification('URL Google Apps Script tidak ditetapkan', true);
-        return false;
-    }
-    
-    showLoading(true);
-    
-    try {
-        const isConnected = await testConnection();
-        if (!isConnected) {
-            showNotification('Tidak dapat menyambung ke Google Apps Script. Menggunakan data tempatan.', true);
-            showLoading(false);
-            return false;
-        }
-        
-        const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        const url = `${SCRIPT_URL}?action=getData&callback=${callbackName}`;
-        
-        return new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-                updateConnectionStatus(false);
-                showNotification('Timeout semasa memuatkan data. Sila segar semula halaman.', true);
-                showLoading(false);
-                // Cleanup
-                try { document.body.removeChild(iframe); } catch(e) {}
-                delete window[callbackName];
-                resolve(false);
-            }, 10000);
-            
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.name = 'jsonp-iframe';
-            
-            window[callbackName] = function(response) {
-                clearTimeout(timeout);
-                try {
-                    // PEMBAIKAN: Gunakan try...catch untuk removeChild
-                    if (iframe && iframe.parentNode) {
-                        iframe.parentNode.removeChild(iframe);
-                    }
-                } catch (error) {
-                    console.warn('Could not remove iframe:', error);
-                }
-                delete window[callbackName];
-                
-                try {
-                    const data = JSON.parse(response);
-                    
-                    if (data.status === 'success' && data.data) {
-                        ramadanDays = data.data;
-                        for (let i = 1; i <= TOTAL_DAYS; i++) {
-                            if (!ramadanDays.find(d => d.day === i)) {
-                                ramadanDays.push({
-                                    day: i,
-                                    slots: Array(SLOTS_PER_DAY).fill(false),
-                                    donorName: '',
-                                    donorPhone: '',
-                                    collected: 0
-                                });
-                            }
-                        }
-                        ramadanDays.sort((a, b) => a.day - b.day);
-                        
-                        LAST_SYNC_TIME = Date.now();
-                        saveDataToLocalStorage();
-                        
-                        updateMainProgressBar();
-                        generateDayCards(1);
-                        generateDayCards(2);
-                        generateDayCards(3);
-                        generateDayCards(4);
-                        generateDayOptions();
-                        updateSyncStatus('success');
-                        
-                        showNotification('Data telah dimuatkan dari Google Apps Script');
-                    } else {
-                        showNotification(data.message || 'Ralat tidak diketahui dari Apps Script', true);
-                        updateSyncStatus('error');
-                    }
-                    showLoading(false);
-                    resolve(true);
-                } catch (parseError) {
-                    console.error('Error parsing response:', parseError);
-                    updateConnectionStatus(false);
-                    showNotification('Ralat semasa memproses data: ' + parseError.message, true);
-                    updateSyncStatus('error');
-                    showLoading(false);
-                    resolve(false);
-                }
-            };
-            
-            iframe.onerror = () => {
-                clearTimeout(timeout);
-                updateConnectionStatus(false);
-                showNotification('Gagal memuatkan skrip dari Google Apps Script. Sila segar semula halaman.', true);
-                showLoading(false);
-                // Cleanup
-                try { document.body.removeChild(iframe); } catch(e) {}
-                delete window[callbackName];
-                resolve(false);
-            };
-            
-            document.body.appendChild(iframe);
-            
-            setTimeout(() => {
-                try {
-                    iframe.contentWindow.document.body.innerHTML = `
-                        <form id="jsonp-form" method="POST">
-                            <input type="hidden" name="action" value="getData">
-                        </form>
-                    `;
-                    iframe.contentWindow.document.getElementById('jsonp-form').submit();
-                } catch (error) {
-                    clearTimeout(timeout);
-                    console.error('Error submitting form via iframe:', error);
-                    resolve(false);
-                }
-            }, 100);
-        });
-    } catch (error) {
-        console.error('Error loading data from Google Apps Script:', error);
-        updateConnectionStatus(false);
-        showNotification('Ralat semasa memuatkan data: ' + error.message, true);
-        updateSyncStatus('error');
-        showLoading(false);
-        return false;
-    }
-}
-        
         // Load data from localStorage
         function loadDataFromLocalStorage() {
             const savedData = localStorage.getItem('ramadanDonationData');
@@ -1812,132 +1521,6 @@ async function loadDataFromAppsScript() {
             }
         }
         
-        // Save data to Google Apps Script with iframe method
-        async function saveDataToAppsScript(retryCount = RETRY_COUNT) {
-            if (!SCRIPT_URL || !IS_ONLINE) {
-                showNotification('Google Apps Script tidak tersedia. Data disimpan secara tempatan.');
-                return false;
-            }
-            
-            showLoading(true);
-            
-            try {
-                const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                const dataParam = encodeURIComponent(JSON.stringify(ramadanDays));
-                const url = `${SCRIPT_URL}?action=saveData&data=${dataParam}&callback=${callbackName}`;
-                
-                return new Promise((resolve) => {
-                    const timeout = setTimeout(() => {
-                        document.body.removeChild(iframe);
-                        if (retryCount > 0) {
-                            console.log(`Save data failed, retrying... (${retryCount} attempts left)`);
-                            setTimeout(() => {
-                                saveDataToAppsScript(retryCount - 1).then(resolve);
-                            }, RETRY_DELAY);
-                        } else {
-                            updateConnectionStatus(false);
-                            showNotification('Gagal menyimpan. Data disimpan secara tempatan.');
-                            saveDataToLocalStorage();
-                            showLoading(false);
-                            resolve(false);
-                        }
-                    }, 10000);
-                    
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.name = 'jsonp-iframe';
-                    
-                    window[callbackName] = function(result) {
-                        try {
-                            // Clean up
-                            delete window[callbackName];
-                            document.body.removeChild(iframe);
-                            
-                            if (result.status === 'success') {
-                                // Update last sync time
-                                LAST_SYNC_TIME = Date.now();
-                                
-                                // Also save to localStorage as backup
-                                saveDataToLocalStorage();
-                                
-                                showNotification('Data telah disimpan ke Google Apps Script');
-                                updateSyncStatus('success');
-                                showLoading(false);
-                                resolve(true);
-                            } else {
-                                if (retryCount > 0) {
-                                    console.log(`Save data failed, retrying... (${retryCount} attempts left)`);
-                                    setTimeout(() => {
-                                        saveDataToAppsScript(retryCount - 1).then(resolve);
-                                    }, RETRY_DELAY);
-                                } else {
-                                    updateConnectionStatus(false);
-                                    showNotification(`Gagal menyimpan: ${result.message || 'Ralat tidak diketahui'}. Data disimpan secara tempatan.`);
-                                    saveDataToLocalStorage();
-                                    updateSyncStatus('error');
-                                    showLoading(false);
-                                    resolve(false);
-                                }
-                            }
-                        } catch (error) {
-                            console.error('Error in callback:', error);
-                            updateConnectionStatus(false);
-                            showNotification('Gagal menyimpan data: ' + error.message + '. Data disimpan secara tempatan.');
-                            saveDataToLocalStorage();
-                            updateSyncStatus('error');
-                            showLoading(false);
-                            resolve(false);
-                        }
-                    };
-                    
-                    iframe.onload = () => {
-                        // Wait for the content to load
-                        setTimeout(() => {
-                            try {
-                                iframe.contentWindow.document.body.innerHTML = `
-                                    <form id="jsonp-form" method="POST">
-                                        <input type="hidden" name="action" value="saveData">
-                                        <input type="hidden" name="data" value="${encodeURIComponent(JSON.stringify(ramadanDays))}">
-                                    </form>
-                                `;
-                                iframe.contentWindow.document.getElementById('jsonp-form').submit();
-                            } catch (error) {
-                                reject(error);
-                            }
-                        }, 100);
-                    };
-                    
-                    iframe.onerror = () => {
-                        updateConnectionStatus(false);
-                        showNotification('Gagal menyimpan. Data disimpan secara tempatan.');
-                        saveDataToLocalStorage();
-                        updateSyncStatus('error');
-                        showLoading(false);
-                        resolve(false);
-                    };
-                    
-                    document.body.appendChild(iframe);
-                    
-                    // Submit the form
-                    setTimeout(() => {
-                        try {
-                            iframe.contentWindow.document.getElementById('jsonp-form').submit();
-                        } catch (error) {
-                            reject(error);
-                        }
-                    }, 100);
-                });
-            } catch (error) {
-                console.error('Error saving data to Google Apps Script:', error);
-                updateConnectionStatus(false);
-                showNotification('Gagal menyimpan data: ' + error.message + '. Data disimpan secara tempatan.');
-                saveDataToLocalStorage();
-                updateSyncStatus('error');
-                showLoading(false);
-                return false;
-            }
-        }
-        
         // Save data to localStorage
         function saveDataToLocalStorage() {
             try {
@@ -1950,72 +1533,7 @@ async function loadDataFromAppsScript() {
                 return false;
             }
         }
-        
-        // Save donor information to Google Apps Script
-        async function saveDonorToAppsScript(donorName, donorPhone, day, slots) {
-            if (!SCRIPT_URL || !IS_ONLINE) return false;
-            
-            try {
-                const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                const donorData = {
-                    name: donorName, phone: donorPhone, day: day, slots: slots,
-                    amount: slots.length * SLOT_PRICE, date: new Date().toISOString()
-                };
-                const dataParam = encodeURIComponent(JSON.stringify(donorData));
-                const url = `${SCRIPT_URL}?action=saveDonor&donorData=${dataParam}&callback=${callbackName}`;
-
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.name = 'jsonp-iframe';
                 
-                window[callbackName] = function(result) {
-                    try {
-                        delete window[callbackName];
-                        document.body.removeChild(iframe);
-                    } catch (error) {
-                        console.error('Error in donor callback:', error);
-                    }
-                };
-                
-                iframe.onload = () => {
-                    // Wait for the content to load
-                    setTimeout(() => {
-                        try {
-                            iframe.contentWindow.document.body.innerHTML = `
-                                <form id="jsonp-form" method="POST">
-                                    <input type="hidden" name="action" value="saveDonor">
-                                    <input type="hidden" name="donorData" value="${encodeURIComponent(JSON.stringify(donorData))}">
-                                    </form>
-                                `;
-                            iframe.contentWindow.document.getElementById('jsonp-form').submit();
-                        } catch (error) {
-                            console.error('Error in donor iframe:', error);
-                        }
-                    }, 100);
-                };
-                
-                iframe.onerror = () => {
-                    console.error('Error in donor iframe:', error);
-                };
-                
-                document.body.appendChild(iframe);
-                
-                // Submit the form
-                setTimeout(() => {
-                    try {
-                        iframe.contentWindow.document.getElementById('jsonp-form').submit();
-                    } catch (error) {
-                        console.error('Error submitting donor form:', error);
-                    }
-                }, 100);
-                
-                return true;
-            } catch (error) {
-                console.error('Error saving donor data:', error);
-                return false;
-            }
-        }
-        
         // Auto sync function
         async function autoSync() {
             if (!USE_APPS_SCRIPT || !IS_ONLINE) return;
