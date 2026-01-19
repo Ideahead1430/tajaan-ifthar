@@ -1129,34 +1129,25 @@ body {
         const TOTAL_TARGET = DAILY_TARGET * TOTAL_DAYS;
         
         // Google Apps Script Configuration - Hardcoded URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLUdbsR48uwOQEWnmZAbzhjX8cNZWfLvPoTLNUjd15NhwhFiDcjhPJYFrBaVjc0XW1/exec';
-        const USE_APPS_SCRIPT = true; // Always use Google Apps Script
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzWHnWnT1WDqvLr5_Xj_flcRBOpB65urd7vHmztEA87W6IH0w02E9rOhlbr8UdsG3qE/exec'; // PASTIKAN INI ADALAH URL YANG BARU
+        const USE_APPS_SCRIPT = true;
         let ramadanDays = [];
         let IS_ONLINE = false;
         let LAST_SYNC_TIME = 0;
-        let SYNC_INTERVAL = 60000; // Sync every 60 seconds
+        let SYNC_INTERVAL = 60000;
         let RETRY_COUNT = 3;
         let RETRY_DELAY = 2000;
         
         // Admin Configuration
         let IS_ADMIN_LOGGED_IN = false;
         let ADMIN_USERNAME = '';
-        const ADMIN_CREDENTIALS = {
-            username: 'admin',
-            password: 'admin123' // Default credentials, should be changed in production
-        };
+        const ADMIN_CREDENTIALS = { username: 'admin', password: 'admin123' };
         
         // Initialize data structure
         function initializeData() {
             ramadanDays = [];
             for (let i = 1; i <= TOTAL_DAYS; i++) {
-                ramadanDays.push({
-                    day: i,
-                    slots: Array(SLOTS_PER_DAY).fill(false),
-                    donorName: '',
-                    donorPhone: '',
-                    collected: 0
-                });
+                ramadanDays.push({ day: i, slots: Array(SLOTS_PER_DAY).fill(false), donorName: '', donorPhone: '', collected: 0 });
             }
         }
         
@@ -1165,7 +1156,6 @@ body {
             IS_ONLINE = isOnline;
             const indicator = document.getElementById('connectionIndicator');
             const text = document.getElementById('connectionText');
-            
             if (isOnline) {
                 indicator.className = 'connection-indicator connection-online';
                 text.textContent = 'Dalam talian';
@@ -1179,245 +1169,190 @@ body {
         function updateSyncStatus(status) {
             const indicator = document.getElementById('syncIndicator');
             const text = document.getElementById('syncText');
-            
             switch(status) {
-                case 'success':
-                    indicator.className = 'sync-indicator sync-success';
-                    text.textContent = 'Data disegerak';
-                    break;
-                case 'pending':
-                    indicator.className = 'sync-indicator sync-pending';
-                    text.textContent = 'Menyegerak data...';
-                    break;
-                case 'error':
-                    indicator.className = 'sync-indicator sync-error';
-                    text.textContent = 'Ralat sync';
-                    break;
-                default:
-                    indicator.className = 'sync-indicator sync-pending';
-                    text.textContent = 'Menyegerak data...';
+                case 'success': indicator.className = 'sync-indicator sync-success'; text.textContent = 'Data disegerak'; break;
+                case 'pending': indicator.className = 'sync-indicator sync-pending'; text.textContent = 'Menyegerak data...'; break;
+                case 'error': indicator.className = 'sync-indicator sync-error'; text.textContent = 'Ralat sync'; break;
+                default: indicator.className = 'sync-indicator sync-pending'; text.textContent = 'Menyegerak data...';
             }
         }
-        
-        // MODERN & STABLE FUNCTIONS USING FETCH API
-        
-        // Test connection using modern fetch
-        async function testConnection(retryCount = RETRY_COUNT) {
-            if (!SCRIPT_URL) {
-                updateConnectionStatus(false);
-                return false;
-            }
-            
-            const testUrl = `${SCRIPT_URL}?action=testConnection`;
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-                const response = await fetch(testUrl, {
-                    method: 'GET',
-                    signal: controller.signal
-                });
+        // --- HYBRID FETCH/JSONP FUNCTIONS ---
+
+        // Fallback JSONP function
+        function makeJSONPRequest(url, action, data = {}) {
+            return new Promise((resolve) => {
+                const callbackName = 'jsonpCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                const script = document.createElement('script');
+                script.src = `${url}?action=${action}&callback=${callbackName}&${new URLSearchParams(data).toString()}`;
+                script.async = true;
                 
-                clearTimeout(timeoutId);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    updateConnectionStatus(true);
-                    return true;
-                } else {
-                    throw new Error(data.message || 'Test connection returned an error');
-                }
-
-            } catch (error) {
-                console.error(`Connection test failed: ${error.message}`);
-                updateConnectionStatus(false);
-                
-                if (retryCount > 0) {
-                    console.log(`Retrying connection test... (${retryCount} attempts left)`);
-                    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-                    return testConnection(retryCount - 1);
-                }
-                
-                return false;
-            }
-        }
-        
-        // Load data from Google Apps Script using modern fetch
-        async function loadDataFromAppsScript() {
-            if (!SCRIPT_URL) {
-                showNotification('URL Google Apps Script tidak ditetapkan', true);
-                return false;
-            }
-            
-            showLoading(true);
-            updateSyncStatus('pending');
-            
-            const loadUrl = `${SCRIPT_URL}?action=getData`;
-            
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-
-                const response = await fetch(loadUrl, {
-                    method: 'GET',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.status === 'success' && result.data) {
-                    ramadanDays = result.data;
-                    // Fill in any missing days
-                    for (let i = 1; i <= TOTAL_DAYS; i++) {
-                        if (!ramadanDays.find(d => d.day === i)) {
-                            ramadanDays.push({
-                                day: i,
-                                slots: Array(SLOTS_PER_DAY).fill(false),
-                                donorName: '',
-                                donorPhone: '',
-                                collected: 0
-                            });
-                        }
+                window[callbackName] = (response) => {
+                    try {
+                        document.head.removeChild(script);
+                        delete window[callbackName];
+                        resolve(response);
+                    } catch (e) {
+                        console.error("JSONP cleanup error:", e);
                     }
-                    ramadanDays.sort((a, b) => a.day - b.day);
-                    
-                    LAST_SYNC_TIME = Date.now();
-                    saveDataToLocalStorage();
-                    
-                    updateMainProgressBar();
-                    generateDayCards(1);
-                    generateDayCards(2);
-                    generateDayCards(3);
-                    generateDayCards(4);
-                    generateDayOptions();
-                    updateSyncStatus('success');
-                    
-                    showNotification('Data telah dimuatkan dari Google Apps Script');
-                    showLoading(false);
-                    return true;
-                } else {
-                    throw new Error(result.message || 'Ralat tidak diketahui dari Apps Script');
-                }
+                };
+                
+                script.onerror = () => {
+                    console.error("JSONP script error");
+                    document.head.removeChild(script);
+                    delete window[callbackName];
+                    resolve({ status: 'error', message: 'JSONP request failed' });
+                };
+                
+                document.head.appendChild(script);
+            });
+        }
 
+        // Test connection with fetch and JSONP fallback
+        async function testConnection(retryCount = RETRY_COUNT) {
+            if (!SCRIPT_URL) { updateConnectionStatus(false); return false; }
+            
+            // Try modern fetch first
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=testConnection`, { method: 'GET' });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                if (data.status === 'success') { updateConnectionStatus(true); return true; }
+            } catch (fetchError) {
+                console.warn('Fetch failed, falling back to JSONP:', fetchError.message);
+            }
+
+            // Fallback to JSONP
+            try {
+                const data = await makeJSONPRequest(SCRIPT_URL, 'testConnection');
+                if (data.status === 'success') { updateConnectionStatus(true); return true; }
+            } catch (jsonpError) {
+                console.error('JSONP also failed:', jsonpError);
+            }
+
+            updateConnectionStatus(false);
+            if (retryCount > 0) {
+                console.log(`Retrying connection test... (${retryCount} attempts left)`);
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                return testConnection(retryCount - 1);
+            }
+            return false;
+        }
+        
+        // Load data with fetch and JSONP fallback
+        async function loadDataFromAppsScript() {
+            if (!SCRIPT_URL) { showNotification('URL Google Apps Script tidak ditetapkan', true); return false; }
+            showLoading(true); updateSyncStatus('pending');
+            
+            // Try modern fetch first
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getData`, { method: 'GET' });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                if (result.status === 'success' && result.data) {
+                    processDataFromServer(result);
+                    return true;
+                }
+            } catch (fetchError) {
+                console.warn('Fetch failed, falling back to JSONP:', fetchError.message);
+            }
+
+            // Fallback to JSONP
+            try {
+                const result = await makeJSONPRequest(SCRIPT_URL, 'getData');
+                if (result.status === 'success' && result.data) {
+                    processDataFromServer(result);
+                    return true;
+                }
+                throw new Error(result.message || 'Data tidak dapat dimuatkan');
             } catch (error) {
-                console.error('Error loading data from Google Apps Script:', error);
-                updateConnectionStatus(false);
-                updateSyncStatus('error');
+                console.error('All loading methods failed:', error);
+                updateConnectionStatus(false); updateSyncStatus('error');
                 showNotification('Gagal memuatkan data: ' + error.message, true);
                 showLoading(false);
                 return false;
             }
         }
-        
-        // Save data to Google Apps Script using modern fetch
-        async function saveDataToAppsScript(retryCount = RETRY_COUNT) {
-            if (!SCRIPT_URL || !IS_ONLINE) {
-                showNotification('Google Apps Script tidak tersedia. Data disimpan secara tempatan.');
-                return false;
+
+        // Helper function to process data
+        function processDataFromServer(result) {
+            ramadanDays = result.data;
+            for (let i = 1; i <= TOTAL_DAYS; i++) {
+                if (!ramadanDays.find(d => d.day === i)) {
+                    ramadanDays.push({ day: i, slots: Array(SLOTS_PER_DAY).fill(false), donorName: '', donorPhone: '', collected: 0 });
+                }
             }
+            ramadanDays.sort((a, b) => a.day - b.day);
+            LAST_SYNC_TIME = Date.now(); saveDataToLocalStorage();
+            updateMainProgressBar(); generateDayCards(1); generateDayCards(2); generateDayCards(3); generateDayCards(4);
+            generateDayOptions(); updateSyncStatus('success');
+            showNotification('Data telah dimuatkan dari Google Apps Script');
+            showLoading(false);
+        }
+        
+        // Save data with fetch and JSONP fallback
+        async function saveDataToAppsScript(retryCount = RETRY_COUNT) {
+            if (!SCRIPT_URL || !IS_ONLINE) { showNotification('Google Apps Script tidak tersedia. Data disimpan secara tempatan.'); return false; }
+            showLoading(true); updateSyncStatus('pending');
             
-            showLoading(true);
-            updateSyncStatus('pending');
-            
-            const saveUrl = `${SCRIPT_URL}?action=saveData`;
-            
+            const saveData = { data: JSON.stringify(ramadanDays) };
+
+            // Try modern fetch first
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-                const response = await fetch(saveUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ data: ramadanDays }),
-                    signal: controller.signal
+                const response = await fetch(`${SCRIPT_URL}?action=saveData`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(saveData)
                 });
-                
-                clearTimeout(timeoutId);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const result = await response.json();
-                
-                if (result.status === 'success') {
-                    LAST_SYNC_TIME = Date.now();
-                    saveDataToLocalStorage();
-                    showNotification('Data telah disimpan ke Google Apps Script');
-                    updateSyncStatus('success');
-                    showLoading(false);
-                    return true;
-                } else {
-                    throw new Error(result.message || 'Ralat tidak diketahui dari Apps Script');
-                }
+                if (result.status === 'success') { handleSaveSuccess(); return true; }
+            } catch (fetchError) {
+                console.warn('Fetch failed, falling back to JSONP:', fetchError.message);
+            }
 
+            // Fallback to JSONP
+            try {
+                const result = await makeJSONPRequest(SCRIPT_URL, 'saveData', saveData);
+                if (result.status === 'success') { handleSaveSuccess(); return true; }
+                throw new Error(result.message || 'Data tidak dapat disimpan');
             } catch (error) {
-                console.error('Error saving data to Google Apps Script:', error);
-                updateConnectionStatus(false);
-                updateSyncStatus('error');
-                
+                console.error('All save methods failed:', error);
+                updateConnectionStatus(false); updateSyncStatus('error');
                 if (retryCount > 0) {
                     console.log(`Retrying save... (${retryCount} attempts left)`);
                     await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
                     return saveDataToAppsScript(retryCount - 1);
                 } else {
                     showNotification('Gagal menyimpan: ' + error.message + '. Data disimpan secara tempatan.');
-                    saveDataToLocalStorage();
-                    showLoading(false);
+                    saveDataToLocalStorage(); showLoading(false);
                     return false;
                 }
             }
         }
-        
-        // Save donor information to Google Apps Script using modern fetch
-        async function saveDonorToAppsScript(donorName, donorPhone, day, slots) {
-            if (!SCRIPT_URL || !IS_ONLINE) return false;
-            
-            const saveUrl = `${SCRIPT_URL}?action=saveDonor`;
-            const donorData = {
-                name: donorName, 
-                phone: donorPhone, 
-                day: day, 
-                slots: slots,
-                amount: slots.length * SLOT_PRICE, 
-                date: new Date().toISOString()
-            };
-            
-            try {
-                await fetch(saveUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ donorData: donorData })
-                });
-                return true;
-            } catch (error) {
-                console.error('Error saving donor data:', error);
-                return false;
-            }
+
+        // Helper function for successful save
+        function handleSaveSuccess() {
+            LAST_SYNC_TIME = Date.now(); saveDataToLocalStorage();
+            showNotification('Data telah disimpan ke Google Apps Script');
+            updateSyncStatus('success'); showLoading(false);
         }
         
-        // END OF MODERN FUNCTIONS
+        // Save donor information (POST requests often fail with fetch, use JSONP directly for reliability)
+        async function saveDonorToAppsScript(donorName, donorPhone, day, slots) {
+            if (!SCRIPT_URL || !IS_ONLINE) return false;
+            const donorData = { name: donorName, phone: donorPhone, day: day, slots: slots, amount: slots.length * SLOT_PRICE, date: new Date().toISOString() };
+            try {
+                await makeJSONPRequest(SCRIPT_URL, 'saveDonor', { donorData: JSON.stringify(donorData) });
+                return true;
+            } catch (error) { console.error('Error saving donor data:', error); return false; }
+        }
+        
+        // --- END OF HYBRID FUNCTIONS ---
 
-        // Update data source status
+        // --- ALL OTHER HELPER FUNCTIONS ---
+
         function updateDataSourceStatus() {
             const statusElement = document.getElementById('dataSourceStatus');
-            
             if (USE_APPS_SCRIPT) {
                 if (IS_ONLINE) {
                     statusElement.className = 'data-source-status apps-script';
@@ -1432,58 +1367,23 @@ body {
             }
         }
         
-        // Admin Login Functions
-        function showLoginModal() {
-            document.getElementById('loginModal').classList.add('active');
-            document.getElementById('adminUsername').value = '';
-            document.getElementById('adminPassword').value = '';
-            document.getElementById('loginError').classList.remove('show');
-        }
-        
-        function hideLoginModal() {
-            document.getElementById('loginModal').classList.remove('active');
-        }
-        
-        function showLoginError(message) {
-            const errorElement = document.getElementById('loginError');
-            errorElement.textContent = message;
-            errorElement.classList.add('show');
-        }
-        
-        function hideLoginError() {
-            document.getElementById('loginError').classList.remove('show');
-        }
+        function showLoginModal() { document.getElementById('loginModal').classList.add('active'); document.getElementById('adminUsername').value = ''; document.getElementById('adminPassword').value = ''; document.getElementById('loginError').classList.remove('show'); }
+        function hideLoginModal() { document.getElementById('loginModal').classList.remove('active'); }
+        function showLoginError(message) { const errorElement = document.getElementById('loginError'); errorElement.textContent = message; errorElement.classList.add('show'); }
+        function hideLoginError() { document.getElementById('loginError').classList.remove('show'); }
         
         function adminLogin() {
             const username = document.getElementById('adminUsername').value.trim();
             const password = document.getElementById('adminPassword').value.trim();
-            
-            if (!username || !password) {
-                showLoginError('Sila masukkan nama pengguna dan katalaluan');
-                return;
-            }
-            
+            if (!username || !password) { showLoginError('Sila masukkan nama pengguna dan katalaluan'); return; }
             if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-                IS_ADMIN_LOGGED_IN = true;
-                ADMIN_USERNAME = username;
-                hideLoginModal();
-                updateAdminUI();
-                showNotification('Log masuk admin berjaya');
-                
-                // Show admin panel
+                IS_ADMIN_LOGGED_IN = true; ADMIN_USERNAME = username; hideLoginModal(); updateAdminUI(); showNotification('Log masuk admin berjaya');
                 document.getElementById('adminPanel').classList.add('active');
-            } else {
-                showLoginError('Nama pengguna atau katalaluan salah');
-            }
+            } else { showLoginError('Nama pengguna atau katalaluan salah'); }
         }
         
         function adminLogout() {
-            IS_ADMIN_LOGGED_IN = false;
-            ADMIN_USERNAME = '';
-            updateAdminUI();
-            showNotification('Log keluar admin berjaya');
-            
-            // Hide admin panel
+            IS_ADMIN_LOGGED_IN = false; ADMIN_USERNAME = ''; updateAdminUI(); showNotification('Log keluar admin berjaya');
             document.getElementById('adminPanel').classList.remove('active');
         }
         
@@ -1491,538 +1391,189 @@ body {
             const adminLoginBtn = document.getElementById('adminLoginBtn');
             const adminStatus = document.getElementById('adminStatus');
             const adminUsernameDisplay = document.getElementById('adminUsernameDisplay');
-            
             if (IS_ADMIN_LOGGED_IN) {
-                adminLoginBtn.style.display = 'none';
-                adminStatus.style.display = 'flex';
-                adminUsernameDisplay.textContent = `Admin: ${ADMIN_USERNAME}`;
+                adminLoginBtn.style.display = 'none'; adminStatus.style.display = 'flex'; adminUsernameDisplay.textContent = `Admin: ${ADMIN_USERNAME}`;
             } else {
-                adminLoginBtn.style.display = 'block';
-                adminStatus.style.display = 'none';
+                adminLoginBtn.style.display = 'block'; adminStatus.style.display = 'none';
             }
         }
         
-        // Load data from localStorage
         function loadDataFromLocalStorage() {
             const savedData = localStorage.getItem('ramadanDonationData');
             if (savedData) {
-                try {
-                    const parsedData = JSON.parse(savedData);
-                    ramadanDays = parsedData;
-                    return true;
-                } catch (error) {
-                    console.error('Error parsing saved data:', error);
-                    initializeData();
-                    return false;
-                }
-            } else {
-                initializeData();
-                return false;
-            }
+                try { const parsedData = JSON.parse(savedData); ramadanDays = parsedData; return true; }
+                catch (error) { console.error('Error parsing saved data:', error); initializeData(); return false; }
+            } else { initializeData(); return false; }
         }
         
-        // Save data to localStorage
         function saveDataToLocalStorage() {
-            try {
-                localStorage.setItem('ramadanDonationData', JSON.stringify(ramadanDays));
-                localStorage.setItem('lastSyncTime', LAST_SYNC_TIME.toString());
-                return true;
-            } catch (error) {
-                console.error('Error saving data to localStorage:', error);
-                showNotification('Gagal menyimpan data secara tempatan', true);
-                return false;
-            }
+            try { localStorage.setItem('ramadanDonationData', JSON.stringify(ramadanDays)); localStorage.setItem('lastSyncTime', LAST_SYNC_TIME.toString()); return true; }
+            catch (error) { console.error('Error saving data to localStorage:', error); showNotification('Gagal menyimpan data secara tempatan', true); return false; }
         }
                 
-        // Auto sync function
         async function autoSync() {
             if (!USE_APPS_SCRIPT || !IS_ONLINE) return;
-            
-            // Check if it's time to sync
-            const now = Date.now();
-            if (now - LAST_SYNC_TIME < SYNC_INTERVAL) return;
-            
+            const now = Date.now(); if (now - LAST_SYNC_TIME < SYNC_INTERVAL) return;
             updateSyncStatus('pending');
-            
-            try {
-                // Load fresh data from Google Apps Script
-                const loaded = await loadDataFromAppsScript();
-                if (loaded) {
-                    // Update UI
-                    updateMainProgressBar();
-                    generateDayCards(1);
-                    generateDayCards(2);
-                    generateDayCards(3);
-                    generateDayCards(4);
-                    generateDayOptions();
-                }
-            } catch (error) {
-                console.error('Error in auto sync:', error);
-                updateSyncStatus('error');
-            }
+            try { const loaded = await loadDataFromAppsScript(); if (loaded) { updateMainProgressBar(); generateDayCards(1); generateDayCards(2); generateDayCards(3); generateDayCards(4); generateDayOptions(); } }
+            catch (error) { console.error('Error in auto sync:', error); updateSyncStatus('error'); }
         }
         
-        // Force sync function
         async function forceSync() {
-            if (!IS_ADMIN_LOGGED_IN) {
-                showNotification('Anda perlu log masuk sebagai admin untuk menggunakan fungsi ini', true);
-                return;
-            }
-            
+            if (!IS_ADMIN_LOGGED_IN) { showNotification('Anda perlu log masuk sebagai admin untuk menggunakan fungsi ini', true); return; }
             updateSyncStatus('pending');
-            
-            try {
-                // Load fresh data from Google Apps Script
-                const loaded = await loadDataFromAppsScript();
-                if (loaded) {
-                    // Update UI
-                    updateMainProgressBar();
-                    generateDayCards(1);
-                    generateDayCards(2);
-                    generateDayCards(3);
-                    generateDayCards(4);
-                    generateDayOptions();
-                    showNotification('Data telah disegerakkan dengan jayanya');
-                } else {
-                    showNotification('Gagal menyegerakkan data', true);
-                }
-            } catch (error) {
-                console.error('Error in force sync:', error);
-                showNotification('Ralat semasa menyegerakkan data', true);
-            }
+            try { const loaded = await loadDataFromAppsScript(); if (loaded) { updateMainProgressBar(); generateDayCards(1); generateDayCards(2); generateDayCards(3); generateDayCards(4); generateDayOptions(); showNotification('Data telah disegerakkan dengan jayanya'); } else { showNotification('Gagal menyegerakkan data', true); } }
+            catch (error) { console.error('Error in force sync:', error); showNotification('Ralat semasa menyegerakkan data', true); }
         }
         
-        // Calculate total collected amount
-        function calculateTotalCollected() {
-            return ramadanDays.reduce((total, day) => total + day.collected, 0);
-        }
+        function calculateTotalCollected() { return ramadanDays.reduce((total, day) => total + day.collected, 0); }
+        function calculateOverallProgress() { const totalCollected = calculateTotalCollected(); return Math.round((totalCollected / TOTAL_TARGET) * 100); }
         
-        // Calculate percentage of overall progress
-        function calculateOverallProgress() {
-            const totalCollected = calculateTotalCollected();
-            return Math.round((totalCollected / TOTAL_TARGET) * 100);
-        }
-        
-        // Update main progress bar
         function updateMainProgressBar() {
             const progressBar = document.getElementById('mainProgressBar');
             const percentage = calculateOverallProgress();
-            progressBar.style.width = percentage + '%';
-            progressBar.textContent = percentage + '%';
+            progressBar.style.width = percentage + '%'; progressBar.textContent = percentage + '%';
         }
         
-        // Generate day cards for a specific week
         function generateDayCards(weekNumber) {
-            const startDay = (weekNumber - 1) * 7 + 1;
-            const endDay = Math.min(startDay + 6, TOTAL_DAYS);
-            const weekGrid = document.getElementById('week' + weekNumber + 'Grid');
-            
-            weekGrid.innerHTML = '';
-            
+            const startDay = (weekNumber - 1) * 7 + 1; const endDay = Math.min(startDay + 6, TOTAL_DAYS);
+            const weekGrid = document.getElementById('week' + weekNumber + 'Grid'); weekGrid.innerHTML = '';
             for (let i = startDay; i <= endDay; i++) {
-                const dayData = ramadanDays.find(d => d.day === i);
-                if (!dayData) continue;
-                
-                const filledSlots = dayData.slots.filter(slot => slot === true).length;
-                const percentage = Math.round((filledSlots / SLOTS_PER_DAY) * 100);
+                const dayData = ramadanDays.find(d => d.day === i); if (!dayData) continue;
+                const filledSlots = dayData.slots.filter(slot => slot === true).length; const percentage = Math.round((filledSlots / SLOTS_PER_DAY) * 100);
                 let statusClass, statusText;
-                
-                if (percentage === 0) {
-                    statusClass = 'status-empty';
-                    statusText = 'Belum Penuh';
-                } else if (percentage < 100) {
-                    statusClass = 'status-half';
-                    statusText = 'Separuh';
-                } else {
-                    statusClass = 'status-full';
-                    statusText = 'Penuh';
-                }
-                
-                const dayCard = document.createElement('div');
-                dayCard.className = 'day-card';
-                
-                let slotsHTML = '';
-                for (let j = 0; j < dayData.slots.length; j++) {
-                    const slotClass = dayData.slots[j] ? 'slot filled' : 'slot';
-                    slotsHTML += `<div class="${slotClass}" data-day="${i}" data-slot="${j}">${dayData.slots[j] ? '✓' : j + 1}</div>`;
-                }
-                
-                dayCard.innerHTML = 
-                    `<div class="day-header">
-                        <div class="day-title">Ramadan ${i}</div>
-                        <div class="day-status ${statusClass}">${statusText}</div>
-                    </div>
-                    <div class="day-target">Sasaran: RM${DAILY_TARGET}</div>
-                    <div class="day-collected">Terkumpul: RM${dayData.collected}</div>
-                    <div class="day-progress">
-                        <div class="day-progress-bar" style="width: ${percentage}%"></div>
-                    </div>
-                    <div class="slots-container">
-                        ${slotsHTML}
-                    </div>`;
-                
+                if (percentage === 0) { statusClass = 'status-empty'; statusText = 'Belum Penuh'; } else if (percentage < 100) { statusClass = 'status-half'; statusText = 'Separuh'; } else { statusClass = 'status-full'; statusText = 'Penuh'; }
+                const dayCard = document.createElement('div'); dayCard.className = 'day-card';
+                let slotsHTML = ''; for (let j = 0; j < dayData.slots.length; j++) { const slotClass = dayData.slots[j] ? 'slot filled' : 'slot'; slotsHTML += `<div class="${slotClass}" data-day="${i}" data-slot="${j}">${dayData.slots[j] ? '✓' : j + 1}</div>`; }
+                dayCard.innerHTML = `<div class="day-header"><div class="day-title">Ramadan ${i}</div><div class="day-status ${statusClass}">${statusText}</div></div><div class="day-target">Sasaran: RM${DAILY_TARGET}</div><div class="day-collected">Terkumpul: RM${dayData.collected}</div><div class="day-progress"><div class="day-progress-bar" style="width: ${percentage}%"></div></div><div class="slots-container">${slotsHTML}</div>`;
                 weekGrid.appendChild(dayCard);
             }
         }
         
-        // Generate options for donation day select
         function generateDayOptions() {
-            const select = document.getElementById('donationDay');
-            select.innerHTML = '<option value="">-- Pilih Hari --</option>';
-            
-            for (let i = 1; i <= TOTAL_DAYS; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = 'Ramadan ' + i;
-                select.appendChild(option);
-            }
+            const select = document.getElementById('donationDay'); select.innerHTML = '<option value="">-- Pilih Hari --</option>';
+            for (let i = 1; i <= TOTAL_DAYS; i++) { const option = document.createElement('option'); option.value = i; option.textContent = 'Ramadan ' + i; select.appendChild(option); }
         }
         
-        // Generate slots for selection in modal
         function generateSlotsForSelection(dayNumber) {
-            const container = document.getElementById('slotsSelection');
-            container.innerHTML = '';
-            
-            if (!dayNumber) {
-                container.innerHTML = '<p>Sila pilih hari terlebih dahulu</p>';
-                return;
-            }
-            
-            const dayData = ramadanDays.find(d => d.day === parseInt(dayNumber));
-            if (!dayData) return;
-            
-            const slotsContainer = document.createElement('div');
-            slotsContainer.className = 'slots-container';
-            
+            const container = document.getElementById('slotsSelection'); container.innerHTML = '';
+            if (!dayNumber) { container.innerHTML = '<p>Sila pilih hari terlebih dahulu</p>'; return; }
+            const dayData = ramadanDays.find(d => d.day === parseInt(dayNumber)); if (!dayData) return;
+            const slotsContainer = document.createElement('div'); slotsContainer.className = 'slots-container';
             for (let i = 0; i < SLOTS_PER_DAY; i++) {
-                const slot = document.createElement('div');
-                slot.className = dayData.slots[i] ? 'slot filled' : 'slot';
-                slot.dataset.slot = i;
-                slot.textContent = dayData.slots[i] ? '✓' : i + 1;
-                
-                if (!dayData.slots[i]) {
-                    slot.addEventListener('click', toggleSlotSelection);
-                }
-                
+                const slot = document.createElement('div'); slot.className = dayData.slots[i] ? 'slot filled' : 'slot'; slot.dataset.slot = i; slot.textContent = dayData.slots[i] ? '✓' : i + 1;
+                if (!dayData.slots[i]) { slot.addEventListener('click', toggleSlotSelection); }
                 slotsContainer.appendChild(slot);
             }
-            
             container.appendChild(slotsContainer);
         }
         
-        // Toggle slot selection in modal
-        function toggleSlotSelection(e) {
-            const slot = e.target;
-            slot.classList.toggle('selected');
-            updateDonationSummary();
-        }
+        function toggleSlotSelection(e) { const slot = e.target; slot.classList.toggle('selected'); updateDonationSummary(); }
+        function updateDonationSummary() { const selectedSlots = document.querySelectorAll('#slotsSelection .slot.selected'); const slotsCount = selectedSlots.length; const totalAmount = slotsCount * SLOT_PRICE; document.getElementById('summarySlots').textContent = slotsCount; document.getElementById('summaryTotal').textContent = 'RM' + totalAmount; }
         
-        // Update donation summary in modal
-        function updateDonationSummary() {
-            const selectedSlots = document.querySelectorAll('#slotsSelection .slot.selected');
-            const slotsCount = selectedSlots.length;
-            const totalAmount = slotsCount * SLOT_PRICE;
-            
-            document.getElementById('summarySlots').textContent = slotsCount;
-            document.getElementById('summaryTotal').textContent = 'RM' + totalAmount;
-        }
-        
-        // Show notification
         function showNotification(message, isError = false) {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            
-            if (isError) {
-                notification.classList.add('error');
-            } else {
-                notification.classList.remove('error');
-            }
-            
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
+            const notification = document.getElementById('notification'); notification.textContent = message;
+            if (isError) { notification.classList.add('error'); } else { notification.classList.remove('error'); }
+            notification.classList.add('show'); setTimeout(() => { notification.classList.remove('show'); }, 3000);
         }
         
-        // Show/hide loading overlay
         function showLoading(show) {
             const loadingOverlay = document.getElementById('loadingOverlay');
-            if (show) {
-                loadingOverlay.classList.add('active');
-            } else {
-                loadingOverlay.classList.remove('active');
-            }
+            if (show) { loadingOverlay.classList.add('active'); } else { loadingOverlay.classList.remove('active'); }
         }
         
-        // Submit donation
         async function submitDonation() {
             const donorName = document.getElementById('donorName').value.trim();
             const donorPhone = document.getElementById('donorPhone').value.trim();
             const selectedDay = document.getElementById('donationDay').value;
             const selectedSlots = document.querySelectorAll('#slotsSelection .slot.selected');
-            
-            if (!donorName || !donorPhone || !selectedDay || selectedSlots.length === 0) {
-                showNotification('Sila lengkapkan semua maklumat dan pilih sekurang-kurangnya satu slot', true);
-                return;
-            }
-            
+            if (!donorName || !donorPhone || !selectedDay || selectedSlots.length === 0) { showNotification('Sila lengkapkan semua maklumat dan pilih sekurang-kurangnya satu slot', true); return; }
             const dayData = ramadanDays.find(d => d.day === parseInt(selectedDay));
-            
-            if (!dayData) {
-                showNotification('Ralat: Hari tidak ditemui', true);
-                return;
-            }
-            
-            // Update slots
+            if (!dayData) { showNotification('Ralat: Hari tidak ditemui', true); return; }
             const selectedSlotIndices = [];
-            selectedSlots.forEach(slot => {
-                const slotIndex = parseInt(slot.dataset.slot);
-                dayData.slots[slotIndex] = true;
-                selectedSlotIndices.push(slotIndex);
-            });
-            
-            // Update collected amount
-            dayData.collected += selectedSlots.length * SLOT_PRICE;
-            dayData.donorName = donorName;
-            dayData.donorPhone = donorPhone;
-            
-            // Always save to localStorage first
+            selectedSlots.forEach(slot => { const slotIndex = parseInt(slot.dataset.slot); dayData.slots[slotIndex] = true; selectedSlotIndices.push(slotIndex); });
+            dayData.collected += selectedSlots.length * SLOT_PRICE; dayData.donorName = donorName; dayData.donorPhone = donorPhone;
             saveDataToLocalStorage();
-            
-            // Try to save to Google Apps Script if online
             let savedToAppsScript = false;
-            if (USE_APPS_SCRIPT && IS_ONLINE) {
-                savedToAppsScript = await saveDataToAppsScript();
-                if (savedToAppsScript) {
-                    await saveDonorToAppsScript(donorName, donorPhone, selectedDay, selectedSlotIndices);
-                }
-            }
-            
-            // Update UI
-            updateMainProgressBar();
-            generateDayCards(Math.ceil(selectedDay / 7));
-            
-            // Close modal and reset form
+            if (USE_APPS_SCRIPT && IS_ONLINE) { savedToAppsScript = await saveDataToAppsScript(); if (savedToAppsScript) { await saveDonorToAppsScript(donorName, donorPhone, selectedDay, selectedSlotIndices); } }
+            updateMainProgressBar(); generateDayCards(Math.ceil(selectedDay / 7));
             document.getElementById('donationModal').classList.remove('active');
-            document.getElementById('donorName').value = '';
-            document.getElementById('donorPhone').value = '';
-            document.getElementById('donationDay').value = '';
-            document.getElementById('slotsSelection').innerHTML = '<p>Sila pilih hari terlebih dahulu</p>';
-            updateDonationSummary();
-            
-            // Show notification
+            document.getElementById('donorName').value = ''; document.getElementById('donorPhone').value = ''; document.getElementById('donationDay').value = '';
+            document.getElementById('slotsSelection').innerHTML = '<p>Sila pilih hari terlebih dahulu</p>'; updateDonationSummary();
             let notificationMessage = `Terima kasih ${donorName} atas tempahan RM${selectedSlots.length * SLOT_PRICE}!`;
-            
             if (USE_APPS_SCRIPT && IS_ONLINE) {
-                if (!savedToAppsScript) {
-                    notificationMessage += ' (Data disimpan secara tempatan kerana masalah dengan Google Apps Script)';
-                } else {
-                    notificationMessage += ' (Data disimpan ke Google Apps Script)';
-                }
-            } else {
-                notificationMessage += ' (Data disimpan secara tempatan)';
-            }
-            
+                if (!savedToAppsScript) { notificationMessage += ' (Data disimpan secara tempatan kerana masalah dengan Google Apps Script)'; } else { notificationMessage += ' (Data disimpan ke Google Apps Script)'; }
+            } else { notificationMessage += ' (Data disimpan secara tempatan)'; }
             showNotification(notificationMessage);
         }
         
-        // Refresh data
         async function refreshData() {
             let loaded = false;
-            
-            if (USE_APPS_SCRIPT) {
-                // Test connection first
-                const isConnected = await testConnection();
-                if (isConnected) {
-                    loaded = await loadDataFromAppsScript();
-                } else {
-                    showNotification('Tidak dapat menyambung ke Google Apps Script. Menggunakan data tempatan.', true);
-                    loaded = loadDataFromLocalStorage();
-                }
-            } else {
-                loaded = loadDataFromLocalStorage();
-            }
-            
-            if (loaded) {
-                updateMainProgressBar();
-                generateDayCards(1);
-                generateDayCards(2);
-                generateDayCards(3);
-                generateDayCards(4);
-                showNotification('Data telah dikemaskini');
-            }
+            if (USE_APPS_SCRIPT) { const isConnected = await testConnection(); if (isConnected) { loaded = await loadDataFromAppsScript(); } else { showNotification('Tidak dapat menyambung ke Google Apps Script. Menggunakan data tempatan.', true); loaded = loadDataFromLocalStorage(); } }
+            else { loaded = loadDataFromLocalStorage(); }
+            if (loaded) { updateMainProgressBar(); generateDayCards(1); generateDayCards(2); generateDayCards(3); generateDayCards(4); showNotification('Data telah dikemaskini'); }
         }
         
-        // Export data
         function exportData() {
             const dataStr = JSON.stringify(ramadanDays, null, 2);
             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
             const exportFileDefaultName = 'ramadan_donation_data_' + new Date().toISOString().slice(0,10) + '.json';
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-            
+            const linkElement = document.createElement('a'); linkElement.setAttribute('href', dataUri); linkElement.setAttribute('download', exportFileDefaultName); linkElement.click();
             showNotification('Data telah dieksport');
         }
         
-        // Reset all data
         async function resetData() {
-            if (!IS_ADMIN_LOGGED_IN) {
-                showNotification('Anda perlu log masuk sebagai admin untuk menggunakan fungsi ini', true);
-                return;
-            }
-            
+            if (!IS_ADMIN_LOGGED_IN) { showNotification('Anda perlu log masuk sebagai admin untuk menggunakan fungsi ini', true); return; }
             if (confirm('Adakah anda pasti ingin reset semua data? Tindakan ini tidak boleh dibatalkan.')) {
-                initializeData();
-                
-                // Always save to localStorage
-                saveDataToLocalStorage();
-                
-                // Try to save to Google Apps Script if online
-                if (USE_APPS_SCRIPT && IS_ONLINE) {
-                    await saveDataToAppsScript();
-                }
-                
-                updateMainProgressBar();
-                generateDayCards(1);
-                generateDayCards(2);
-                generateDayCards(3);
-                generateDayCards(4);
-                
+                initializeData(); saveDataToLocalStorage();
+                if (USE_APPS_SCRIPT && IS_ONLINE) { await saveDataToAppsScript(); }
+                updateMainProgressBar(); generateDayCards(1); generateDayCards(2); generateDayCards(3); generateDayCards(4);
                 let notificationMessage = 'Semua data telah direset';
-                if (USE_APPS_SCRIPT && IS_ONLINE) {
-                    notificationMessage += ' (Data disimpan ke Google Apps Script dan secara tempatan)';
-                } else {
-                    notificationMessage += ' (Data disimpan secara tempatan)';
-                }
-                
+                if (USE_APPS_SCRIPT && IS_ONLINE) { notificationMessage += ' (Data disimpan ke Google Apps Script dan secara tempatan)'; } else { notificationMessage += ' (Data disimpan secara tempatan)'; }
                 showNotification(notificationMessage);
             }
         }
         
         // Initialize the application
         async function init() {
-            // Load last sync time from localStorage
             const savedLastSyncTime = localStorage.getItem('lastSyncTime');
-            if (savedLastSyncTime) {
-                LAST_SYNC_TIME = parseInt(savedLastSyncTime);
-            }
-            
-            // Update data source status
+            if (savedLastSyncTime) { LAST_SYNC_TIME = parseInt(savedLastSyncTime); }
             updateDataSourceStatus();
-            
-            // Test connection if using Google Apps Script
-            if (USE_APPS_SCRIPT) {
-                await testConnection();
-            }
-            
-            // Load data
+            if (USE_APPS_SCRIPT) { await testConnection(); }
             let loaded = false;
-            
-            if (USE_APPS_SCRIPT && IS_ONLINE) {
-                loaded = await loadDataFromAppsScript();
-            } else {
-                loaded = loadDataFromLocalStorage();
-            }
-            
-            if (loaded) {
-                // Update UI
-                updateMainProgressBar();
-                generateDayCards(1);
-                generateDayCards(2);
-                generateDayCards(3);
-                generateDayCards(4);
-                generateDayOptions();
-            } else {
-                // Initialize with empty data
-                initializeData();
-                updateMainProgressBar();
-                generateDayCards(1);
-                generateDayCards(2);
-                generateDayCards(3);
-                generateDayCards(4);
-                generateDayOptions();
-            }
+            if (USE_APPS_SCRIPT && IS_ONLINE) { loaded = await loadDataFromAppsScript(); } else { loaded = loadDataFromLocalStorage(); }
+            if (loaded) { updateMainProgressBar(); generateDayCards(1); generateDayCards(2); generateDayCards(3); generateDayCards(4); generateDayOptions(); } else { initializeData(); updateMainProgressBar(); generateDayCards(1); generateDayCards(2); generateDayCards(3); generateDayCards(4); generateDayOptions(); }
             
             // Event listeners
-            document.getElementById('mainDonateBtn').addEventListener('click', () => {
-                document.getElementById('donationModal').classList.add('active');
-            });
-            
-            document.getElementById('closeModal').addEventListener('click', () => {
-                document.getElementById('donationModal').classList.remove('active');
-            });
-            
-            document.getElementById('donationDay').addEventListener('change', (e) => {
-                generateSlotsForSelection(e.target.value);
-                updateDonationSummary();
-            });
-            
+            document.getElementById('mainDonateBtn').addEventListener('click', () => { document.getElementById('donationModal').classList.add('active'); });
+            document.getElementById('closeModal').addEventListener('click', () => { document.getElementById('donationModal').classList.remove('active'); });
+            document.getElementById('donationDay').addEventListener('change', (e) => { generateSlotsForSelection(e.target.value); updateDonationSummary(); });
             document.getElementById('submitDonation').addEventListener('click', submitDonation);
-            
-            // Tab switching
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', () => {
-                    // Remove active class from all tabs and contents
                     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                    
-                    // Add active class to clicked tab and corresponding content
-                    tab.classList.add('active');
-                    const weekNumber = tab.dataset.week;
-                    document.getElementById('week' + weekNumber).classList.add('active');
+                    tab.classList.add('active'); const weekNumber = tab.dataset.week; document.getElementById('week' + weekNumber).classList.add('active');
                 });
             });
-            
-            // Admin panel
             document.getElementById('refreshDataBtn').addEventListener('click', refreshData);
             document.getElementById('exportDataBtn').addEventListener('click', exportData);
             document.getElementById('resetDataBtn').addEventListener('click', resetData);
             document.getElementById('forceSyncBtn').addEventListener('click', forceSync);
-            
-            // Admin login
             document.getElementById('adminLoginBtn').addEventListener('click', showLoginModal);
             document.getElementById('closeLoginModal').addEventListener('click', hideLoginModal);
             document.getElementById('loginBtn').addEventListener('click', adminLogin);
             document.getElementById('adminLogoutBtn').addEventListener('click', adminLogout);
-            
-            // Close modal when clicking outside
             window.addEventListener('click', (e) => {
-                if (e.target === document.getElementById('donationModal')) {
-                    document.getElementById('donationModal').classList.remove('active');
-                }
-                if (e.target === document.getElementById('loginModal')) {
-                    hideLoginModal();
-                }
+                if (e.target === document.getElementById('donationModal')) { document.getElementById('donationModal').classList.remove('active'); }
+                if (e.target === document.getElementById('loginModal')) { hideLoginModal(); }
             });
-            
-            // Handle Enter key in login form
-            document.getElementById('adminPassword').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    adminLogin();
-                }
-            });
-            
-            // Periodic connection check and auto sync
-            setInterval(async () => {
-                if (USE_APPS_SCRIPT) {
-                    await testConnection();
-                    updateDataSourceStatus();
-                    
-                    // Auto sync if online
-                    if (IS_ONLINE) {
-                        await autoSync();
-                    }
-                }
-            }, 30000); // Check every 30 seconds
+            document.getElementById('adminPassword').addEventListener('keypress', (e) => { if (e.key === 'Enter') { adminLogin(); } });
+            setInterval(async () => { if (USE_APPS_SCRIPT) { await testConnection(); updateDataSourceStatus(); if (IS_ONLINE) { await autoSync(); } } }, 30000);
         }
         
         // Run the application when DOM is fully loaded
         document.addEventListener('DOMContentLoaded', init);
-    </script>
+</script>
 </body>
 </html>
